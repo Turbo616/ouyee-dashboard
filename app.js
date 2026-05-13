@@ -16,7 +16,8 @@ const state = {
       s.id,
       {
         ga4: { source: "none", dataByDate: {}, channels: {}, devices: {}, topPages: [] },
-        leads: { total: 0, daily: {}, countries: {}, storeTypes: {}, owners: {} }
+        leads: { total: 0, daily: {}, countries: {}, storeTypes: {}, owners: {} },
+        gsc: { siteUrl: null, error: null, kpi: { clicks: 0, impressions: 0, ctr: 0, position: 0 }, topQueries: [], topPages: [] }
       }
     ])
   ),
@@ -166,6 +167,15 @@ async function discoverProperties() {
   return payload.properties || [];
 }
 
+async function loadGscSummary(startDate, endDate, siteIds) {
+  const sites = siteIds.join(",");
+  const url = `/api/gsc/summary?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&sites=${encodeURIComponent(sites)}`;
+  const res = await fetch(url);
+  const payload = await res.json();
+  if (!res.ok) throw new Error(payload.error || "GSC request failed");
+  return payload;
+}
+
 function renderSiteList() {
   const root = document.getElementById("siteList");
   root.innerHTML = "";
@@ -212,6 +222,13 @@ function aggregateForSelected(siteIds, dates) {
     countries: {},
     storeTypes: {},
     owners: {}
+    ,
+    gscClicks: 0,
+    gscImpressions: 0,
+    gscCtrWeighted: 0,
+    gscPositionWeighted: 0,
+    gscCtr: 0,
+    gscPosition: 0
   };
 
   const countryMaps = [];
@@ -242,6 +259,12 @@ function aggregateForSelected(siteIds, dates) {
     countryMaps.push(item.leads.countries);
     storeTypeMaps.push(item.leads.storeTypes);
     ownerMaps.push(item.leads.owners);
+
+    const gsc = item.gsc?.kpi || {};
+    out.gscClicks += Number(gsc.clicks || 0);
+    out.gscImpressions += Number(gsc.impressions || 0);
+    out.gscCtrWeighted += Number(gsc.ctr || 0) * Number(gsc.impressions || 0);
+    out.gscPositionWeighted += Number(gsc.position || 0) * Number(gsc.impressions || 0);
   });
 
   out.countries = sumMaps(countryMaps);
@@ -251,6 +274,8 @@ function aggregateForSelected(siteIds, dates) {
   out.leadRate = out.sessions ? out.leads / out.sessions : 0;
   out.bounceRate = out.sessions ? out.bounceWeighted / out.sessions : 0;
   out.avgDuration = out.sessions ? out.avgDurationWeighted / out.sessions : 0;
+  out.gscCtr = out.gscImpressions ? out.gscCtrWeighted / out.gscImpressions : 0;
+  out.gscPosition = out.gscImpressions ? out.gscPositionWeighted / out.gscImpressions : 0;
 
   return out;
 }
@@ -272,10 +297,10 @@ function renderKpis(current, previous) {
   const items = [
     { name: "Leads (Sheet)", value: fmtNum(current.leads), delta: delta(current.leads, previous.leads) },
     { name: "Lead Rate", value: fmtPct(current.leadRate), delta: delta(current.leadRate, previous.leadRate) },
-    { name: "Sessions (GA4)", value: fmtNum(current.sessions), delta: delta(current.sessions, previous.sessions) },
-    { name: "Users (GA4)", value: fmtNum(current.users), delta: delta(current.users, previous.users) },
-    { name: "Bounce Rate", value: fmtPct(current.bounceRate), delta: delta(current.bounceRate, previous.bounceRate, true) },
-    { name: "Avg. Duration", value: fmtDuration(current.avgDuration), delta: delta(current.avgDuration, previous.avgDuration) }
+    { name: "GSC Clicks", value: fmtNum(current.gscClicks), delta: delta(current.gscClicks, previous.gscClicks) },
+    { name: "GSC Impressions", value: fmtNum(current.gscImpressions), delta: delta(current.gscImpressions, previous.gscImpressions) },
+    { name: "GSC CTR", value: fmtPct(current.gscCtr), delta: delta(current.gscCtr, previous.gscCtr) },
+    { name: "GSC Position", value: current.gscPosition.toFixed(2), delta: delta(current.gscPosition, previous.gscPosition, true) }
   ];
 
   document.getElementById("kpiGrid").innerHTML = items
@@ -375,6 +400,54 @@ function renderLeadSummaryTable(siteIds, dates) {
     .join("");
 }
 
+function renderGscTables(siteIds) {
+  const queryRows = [];
+  const pageRows = [];
+  siteIds.forEach((siteId) => {
+    const site = SITES.find((s) => s.id === siteId);
+    const gsc = state.store[siteId].gsc || {};
+    (gsc.topQueries || []).slice(0, 8).forEach((r) => {
+      queryRows.push({
+        site: site.domain,
+        key: r.query || "(not set)",
+        clicks: Number(r.clicks || 0),
+        impressions: Number(r.impressions || 0),
+        ctr: Number(r.ctr || 0),
+        position: Number(r.position || 0)
+      });
+    });
+    (gsc.topPages || []).slice(0, 8).forEach((r) => {
+      pageRows.push({
+        site: site.domain,
+        key: r.page || "(not set)",
+        clicks: Number(r.clicks || 0),
+        impressions: Number(r.impressions || 0),
+        ctr: Number(r.ctr || 0),
+        position: Number(r.position || 0)
+      });
+    });
+  });
+
+  queryRows.sort((a, b) => b.clicks - a.clicks);
+  pageRows.sort((a, b) => b.clicks - a.clicks);
+
+  document.getElementById("gscKeywordTable").innerHTML = queryRows
+    .slice(0, 20)
+    .map(
+      (r) =>
+        `<tr><td>${r.site}</td><td>${r.key}</td><td>${fmtNum(r.clicks)}</td><td>${fmtNum(r.impressions)}</td><td>${fmtPct(r.ctr)}</td><td>${r.position.toFixed(2)}</td></tr>`
+    )
+    .join("");
+
+  document.getElementById("gscPageTable").innerHTML = pageRows
+    .slice(0, 20)
+    .map(
+      (r) =>
+        `<tr><td>${r.site}</td><td>${r.key}</td><td>${fmtNum(r.clicks)}</td><td>${fmtNum(r.impressions)}</td><td>${fmtPct(r.ctr)}</td><td>${r.position.toFixed(2)}</td></tr>`
+    )
+    .join("");
+}
+
 function renderHeader(siteIds, dates) {
   document.getElementById("selectedSummary").textContent = `${siteIds.length} sites`;
   document.getElementById("rangeSummary").textContent = `${dates[0] || "-"} to ${dates[dates.length - 1] || "-"}`;
@@ -394,6 +467,7 @@ function renderDashboard() {
   renderHorizontalBar("storeTypeChart", "storeType", current.storeTypes, "#1dff9b");
   renderHorizontalBar("ownerChart", "owner", current.owners, "#ffd166");
   renderLeadSummaryTable(siteIds, dates);
+  renderGscTables(siteIds);
 }
 
 async function refreshAllData() {
@@ -428,6 +502,25 @@ async function refreshAllData() {
     setStatus("Data synced: GA4 + Google Sheets.");
   } catch (err) {
     setStatus(`GA4 synced, Sheet failed: ${err.message}`, true);
+  }
+
+  try {
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+    const gscPayload = await loadGscSummary(startDate, endDate, selected.map((s) => s.id));
+    Object.entries(gscPayload.perSite || {}).forEach(([siteId, info]) => {
+      if (!state.store[siteId]) return;
+      state.store[siteId].gsc = {
+        siteUrl: info.siteUrl || null,
+        error: info.error || null,
+        kpi: info.kpi || { clicks: 0, impressions: 0, ctr: 0, position: 0 },
+        topQueries: info.topQueries || [],
+        topPages: info.topPages || []
+      };
+    });
+    setStatus("Data synced: GA4 + Google Sheets + GSC.");
+  } catch (err) {
+    setStatus(`GA4/Sheet synced, GSC failed: ${err.message}`, true);
   }
 }
 
