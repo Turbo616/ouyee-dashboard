@@ -40,6 +40,27 @@ In `Pages Project -> Settings -> Environment variables`, add:
 
 Set these for both `Production` and `Preview` environments.
 
+### Fast copy from local JSON
+
+If your service account file exists at `.\secrets\ga4-service-account.json`, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\prepare-cloudflare-secrets.ps1
+```
+
+This prints ready-to-copy values for:
+- `GA4_CLIENT_EMAIL`
+- `GA4_PROJECT_ID`
+- `GA4_PRIVATE_KEY`
+
+Optional local dev vars file:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\prepare-cloudflare-secrets.ps1 -WriteDotEnv
+```
+
+It creates `.dev.vars` for local Pages Functions debugging.
+
 ## Verify After Deploy
 
 1. Open `/api/health`
@@ -66,3 +87,11 @@ node server.js
 ```
 
 Then open `http://localhost:8787`.
+
+## Predeploy Check (Optional)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\predeploy-check.ps1
+```
+
+It validates required files and checks that `secrets/` is not tracked by git.
