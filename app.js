@@ -183,6 +183,15 @@ async function discoverProperties() {
   return payload.properties || [];
 }
 
+async function loadSheetLeads() {
+  const res = await fetch("/api/leads/sheet");
+  const payload = await res.json();
+  if (!res.ok) {
+    throw new Error(payload.error || "Sheet leads request failed");
+  }
+  return payload.perSite || {};
+}
+
 function getFocusSite() {
   return SITES.find((s) => s.id === state.focusSiteId) || SITES[0];
 }
@@ -253,7 +262,8 @@ function aggregateMetrics(siteIds, dates) {
     channels: Object.fromEntries(CHANNEL_KEYS.map((k) => [k, 0])),
     devices: Object.fromEntries(DEVICE_KEYS.map((k) => [k, 0])),
     topPages: {},
-    trendBySite: {}
+    trendBySite: {},
+    leads: 0
   };
 
   siteIds.forEach((siteId) => {
@@ -275,6 +285,11 @@ function aggregateMetrics(siteIds, dates) {
       total.trendBySite[siteId].push(day.sessions);
     });
 
+    const leadsDaily = state.store[siteId].leadsDaily || {};
+    dates.forEach((d) => {
+      total.leads += Number(leadsDaily[d] || 0);
+    });
+
     CHANNEL_KEYS.forEach((k) => {
       total.channels[k] += Number(item.channels[k] || 0);
     });
@@ -294,6 +309,7 @@ function aggregateMetrics(siteIds, dates) {
   total.avgDuration = total.sessions ? total.avgDurationWeighted / total.sessions : 0;
   total.bounceRate = total.sessions ? total.bounceWeighted / total.sessions : 0;
   total.conversionRate = total.sessions ? total.conversions / total.sessions : 0;
+  total.leadRate = total.sessions ? total.leads / total.sessions : 0;
   total.topPages = Object.values(total.topPages).sort((a, b) => b.sessions - a.sessions).slice(0, 12);
   return total;
 }
@@ -338,10 +354,11 @@ function renderKpis(current, previous) {
   const items = [
     { name: "Sessions", value: formatNum(current.sessions), delta: formatDelta(current.sessions, previous.sessions) },
     { name: "Users", value: formatNum(current.users), delta: formatDelta(current.users, previous.users) },
-    { name: "Conversion Rate", value: formatPercent(current.conversionRate), delta: formatDelta(current.conversionRate, previous.conversionRate) },
+    { name: "Leads (Sheet)", value: formatNum(current.leads), delta: formatDelta(current.leads, previous.leads) },
+    { name: "Lead Rate", value: formatPercent(current.leadRate), delta: formatDelta(current.leadRate, previous.leadRate) },
     { name: "Bounce Rate", value: formatPercent(current.bounceRate), delta: formatDelta(current.bounceRate, previous.bounceRate, true) },
     { name: "Avg. Duration", value: formatDuration(current.avgDuration), delta: formatDelta(current.avgDuration, previous.avgDuration) },
-    { name: "Revenue", value: `¥${formatNum(current.revenue)}`, delta: formatDelta(current.revenue, previous.revenue) }
+    { name: "Revenue (GA4)", value: `¥${formatNum(current.revenue)}`, delta: formatDelta(current.revenue, previous.revenue) }
   ];
 
   document.getElementById("kpiGrid").innerHTML = items
@@ -519,6 +536,19 @@ async function connectSelectedSites() {
     setStatus(`Connected ${results.length - fails.length}/${results.length}. Fallback mock used for failed sites.`, true);
   } else {
     setStatus(`Connected ${results.length} sites with fixed GA4 IDs.`);
+  }
+
+  // Sheet leads are optional; if unavailable, keep leads as 0.
+  try {
+    const leads = await loadSheetLeads();
+    Object.keys(leads || {}).forEach((siteId) => {
+      if (!state.store[siteId]) return;
+      state.store[siteId].leadsDaily = leads[siteId]?.daily || {};
+      state.store[siteId].leadsTotal = Number(leads[siteId]?.total || 0);
+    });
+    setStatus(`Connected ${results.length} sites + Sheet leads sync.`);
+  } catch (err) {
+    setStatus(`GA4 ok, Sheet leads not connected: ${err.message}`, true);
   }
 }
 

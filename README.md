@@ -10,6 +10,7 @@ This project is ready for Cloudflare Pages deployment.
   - `functions/api/ga4/discover.js`
   - `functions/api/ga4/dashboard.js`
   - `functions/api/ga4/enable-services.js` (optional helper)
+  - `functions/api/leads/sheet.js` (Google Sheet leads source)
 
 ## Deploy to Cloudflare Pages
 
@@ -39,6 +40,16 @@ In `Pages Project -> Settings -> Environment variables`, add:
   - Example: `quick-flame-492901-s4`
 
 Set these for both `Production` and `Preview` environments.
+
+Additional optional vars for leads from Google Sheets:
+
+- `LEADS_SPREADSHEET_ID`
+  - The spreadsheet ID from Google Sheets URL
+- `LEADS_RANGE`
+  - Example: `欧野2!A:Z` or `Sheet1!A:Z`
+
+To use private sheets, share the sheet with:
+- `codex-581@quick-flame-492901-s4.iam.gserviceaccount.com`
 
 ### Fast copy from local JSON
 
