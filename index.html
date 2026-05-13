@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>多站点数据追踪仪表盘</title>
+    <title>Multi-Site Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -20,47 +20,48 @@
       <aside class="panel sidebar">
         <div class="title-wrap">
           <p class="eyebrow">Data Hub</p>
-          <h1>网站追踪中心</h1>
+          <h1>多网站追踪中心</h1>
         </div>
+
         <div class="filters">
-          <p class="section-title">GA4 连接</p>
+          <p class="section-title">当前聚焦站点（固定映射）</p>
           <label>
-            Property ID
-            <input id="propertyIdInput" type="text" placeholder="例如 123456789" />
+            GA4 Property ID
+            <input id="propertyIdInput" type="text" />
           </label>
           <div class="quick-range">
-            <button id="connectGa4Btn" type="button">连接 GA4</button>
-            <button id="refreshGa4Btn" type="button">刷新数据</button>
-          </div>
-          <div class="quick-range">
-            <button id="discoverGa4Btn" type="button">自动识别 Property</button>
+            <button id="connectGa4Btn" type="button">刷新数据</button>
+            <button id="discoverGa4Btn" type="button">校验映射</button>
           </div>
           <p id="ga4Status" class="status-line">等待连接</p>
         </div>
+
         <div class="filters">
-          <p class="section-title">站点选择</p>
+          <p class="section-title">站点选择（可多选）</p>
           <div id="siteList" class="site-list"></div>
         </div>
+
         <div class="filters">
           <p class="section-title">时间范围</p>
           <div class="date-row">
             <label>
-              从
+              Start
               <input id="startDate" type="date" />
             </label>
             <label>
-              到
+              End
               <input id="endDate" type="date" />
             </label>
           </div>
           <div class="quick-range">
-            <button data-days="7">近7天</button>
-            <button data-days="30" class="active">近30天</button>
-            <button data-days="90">近90天</button>
+            <button data-days="7">7D</button>
+            <button data-days="30" class="active">30D</button>
+            <button data-days="90">90D</button>
           </div>
         </div>
+
         <div class="hint">
-          <p>真实模式：通过 Cloudflare Functions 的 /api/ga4 接口读取 GA4；失败时回退模拟数据。</p>
+          <p>询盘统计来自 Google Sheets（手工登记），GA4 主要用于流量辅助分析。</p>
         </div>
       </aside>
 
@@ -68,10 +69,10 @@
         <header class="panel header-card">
           <div>
             <p class="eyebrow">Overview</p>
-            <h2>多网站运营总览</h2>
+            <h2>网站与询盘总览</h2>
           </div>
           <div class="header-meta">
-            <span id="selectedSummary">0 个站点</span>
+            <span id="selectedSummary">0 sites</span>
             <span id="rangeSummary">-</span>
           </div>
         </header>
@@ -81,50 +82,51 @@
         <section class="charts-grid">
           <article class="panel chart-card">
             <div class="card-head">
-              <h3>流量趋势</h3>
-              <p>Sessions / 天</p>
+              <h3>流量趋势（GA4）</h3>
+              <p>Sessions / Day</p>
             </div>
             <canvas id="trendChart"></canvas>
           </article>
           <article class="panel chart-card">
             <div class="card-head">
-              <h3>流量来源</h3>
-              <p>Aggregated Channels</p>
+              <h3>询盘来源国家</h3>
+              <p>Google Sheet Leads</p>
             </div>
-            <canvas id="channelChart"></canvas>
+            <canvas id="countryChart"></canvas>
           </article>
           <article class="panel chart-card">
             <div class="card-head">
-              <h3>设备分布</h3>
-              <p>Desktop / Mobile / Tablet</p>
+              <h3>店铺类型分布</h3>
+              <p>Google Sheet Leads</p>
             </div>
-            <canvas id="deviceChart"></canvas>
+            <canvas id="storeTypeChart"></canvas>
           </article>
           <article class="panel chart-card">
             <div class="card-head">
-              <h3>重点预警</h3>
-              <p>Bounce & 流量波动</p>
+              <h3>跟进人占比</h3>
+              <p>Google Sheet Leads</p>
             </div>
-            <ul id="alertList" class="alert-list"></ul>
+            <canvas id="ownerChart"></canvas>
           </article>
         </section>
 
         <article class="panel table-card">
           <div class="card-head">
-            <h3>Top 页面</h3>
-            <p>按访问量排序</p>
+            <h3>站点询盘汇总</h3>
+            <p>按当前时间范围统计</p>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>站点</th>
-                  <th>页面</th>
-                  <th>Sessions</th>
-                  <th>Conversions</th>
+                  <th>Leads</th>
+                  <th>Top 国家</th>
+                  <th>Top 店铺类型</th>
+                  <th>Top 跟进人</th>
                 </tr>
               </thead>
-              <tbody id="topPageTable"></tbody>
+              <tbody id="leadSummaryTable"></tbody>
             </table>
           </div>
         </article>
