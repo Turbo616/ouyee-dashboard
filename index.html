@@ -20,7 +20,7 @@
       <aside class="panel sidebar">
         <div class="title-wrap">
           <p class="eyebrow">Data Hub</p>
-          <h1 id="titleMain">多网站追踪中心</h1>
+          <h1 id="titleMain">Multi-Site Tracking Hub</h1>
           <div class="quick-range">
             <button id="langZhBtn" type="button" class="active">中文</button>
             <button id="langEnBtn" type="button">EN</button>
@@ -28,25 +28,25 @@
         </div>
 
         <div class="filters">
-          <p id="labelFocus" class="section-title">当前聚焦站点（固定映射）</p>
+          <p id="labelFocus" class="section-title">Focused Site (Fixed Mapping)</p>
           <label>
             <span id="labelProperty">GA4 Property ID</span>
             <input id="propertyIdInput" type="text" />
           </label>
           <div class="quick-range">
-            <button id="connectGa4Btn" type="button">刷新数据</button>
-            <button id="discoverGa4Btn" type="button">校验映射</button>
+            <button id="connectGa4Btn" type="button">Refresh Data</button>
+            <button id="discoverGa4Btn" type="button">Check Mapping</button>
           </div>
-          <p id="ga4Status" class="status-line">等待连接</p>
+          <p id="ga4Status" class="status-line">Waiting for sync</p>
         </div>
 
         <div class="filters">
-          <p id="labelSites" class="section-title">站点选择（可多选）</p>
+          <p id="labelSites" class="section-title">Site Selection (Multi-select)</p>
           <div id="siteList" class="site-list"></div>
         </div>
 
         <div class="filters">
-          <p id="labelRange" class="section-title">时间范围</p>
+          <p id="labelRange" class="section-title">Date Range</p>
           <div class="date-row">
             <label>
               <span id="labelStart">Start</span>
@@ -64,8 +64,15 @@
           </div>
         </div>
 
+        <div class="filters">
+          <label>
+            <span id="labelUnknown">Show Unknown categories</span>
+            <input id="toggleUnknown" type="checkbox" />
+          </label>
+        </div>
+
         <div class="hint">
-          <p id="hintText">询盘统计来自 Google Sheets（手工登记），GA4 主要用于流量辅助分析。</p>
+          <p id="hintText">Leads come from Google Sheets. GA4/GSC are used for traffic and ranking analysis.</p>
         </div>
       </aside>
 
@@ -73,7 +80,7 @@
         <header class="panel header-card">
           <div>
             <p class="eyebrow">Overview</p>
-            <h2 id="titleOverview">网站与询盘总览</h2>
+            <h2 id="titleOverview">Site &amp; Lead Overview</h2>
           </div>
           <div class="header-meta">
             <span id="selectedSummary">0 sites</span>
@@ -86,36 +93,36 @@
         <section class="charts-grid">
           <article class="panel chart-card">
             <div class="card-head">
-              <h3 id="cardTrendTitle">流量趋势（GA4）</h3>
-              <p>Sessions / Day</p>
+              <h3 id="cardTrendTitle">Traffic Trend (GA4)</h3>
+              <p id="cardTrendSub">Sessions / Day</p>
             </div>
             <canvas id="trendChart"></canvas>
           </article>
           <article class="panel chart-card">
             <div class="card-head">
-              <h3 id="cardGscTrendTitle">GSC 平均排名趋势</h3>
-              <p>Position / Day</p>
+              <h3 id="cardGscTrendTitle">GSC Avg Position Trend</h3>
+              <p id="cardGscTrendSub">Position / Day</p>
             </div>
             <canvas id="gscTrendChart"></canvas>
           </article>
           <article class="panel chart-card">
             <div class="card-head">
-              <h3 id="cardCountryTitle">询盘来源国家</h3>
-              <p>Google Sheet Leads</p>
+              <h3 id="cardCountryTitle">Lead Countries</h3>
+              <p id="sheetLeadsLabel1">Google Sheet Leads</p>
             </div>
             <canvas id="countryChart"></canvas>
           </article>
           <article class="panel chart-card">
             <div class="card-head">
-              <h3 id="cardStoreTitle">店铺类型分布</h3>
-              <p>Google Sheet Leads</p>
+              <h3 id="cardStoreTitle">Store Type Distribution</h3>
+              <p id="sheetLeadsLabel2">Google Sheet Leads</p>
             </div>
             <canvas id="storeTypeChart"></canvas>
           </article>
           <article class="panel chart-card">
             <div class="card-head">
-              <h3 id="cardOwnerTitle">跟进人占比</h3>
-              <p>Google Sheet Leads</p>
+              <h3 id="cardOwnerTitle">Owner Distribution</h3>
+              <p id="sheetLeadsLabel3">Google Sheet Leads</p>
             </div>
             <canvas id="ownerChart"></canvas>
           </article>
@@ -123,18 +130,18 @@
 
         <article class="panel table-card">
           <div class="card-head">
-            <h3 id="tableLeadSummaryTitle">站点询盘汇总</h3>
-            <p id="tableLeadSummarySub">按当前时间范围统计</p>
+            <h3 id="tableLeadSummaryTitle">Lead Summary by Site</h3>
+            <p id="tableLeadSummarySub">Current date range</p>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th id="thSite">站点</th>
-                  <th>Leads</th>
-                  <th id="thTopCountry">Top 国家</th>
-                  <th id="thTopStore">Top 店铺类型</th>
-                  <th id="thTopOwner">Top 跟进人</th>
+                  <th id="thSite">Site</th>
+                  <th id="thLeads">Leads</th>
+                  <th id="thTopCountry">Top Country</th>
+                  <th id="thTopStore">Top Store Type</th>
+                  <th id="thTopOwner">Top Owner</th>
                 </tr>
               </thead>
               <tbody id="leadSummaryTable"></tbody>
@@ -145,8 +152,8 @@
         <section class="charts-grid">
           <article class="panel table-card">
             <div class="card-head">
-              <h3>GSC Top Keywords</h3>
-              <p>Clicks / Impressions / CTR / Position</p>
+              <h3 id="gscKeywordTitle">GSC Top Keywords</h3>
+              <p id="gscTableSub1">Clicks / Impressions / CTR / Position</p>
             </div>
             <div class="table-wrap">
               <table>
@@ -154,10 +161,10 @@
                   <tr>
                     <th id="thGscSite1">Site</th>
                     <th id="thGscKeyword">Keyword</th>
-                    <th>Clicks</th>
-                    <th>Impr.</th>
-                    <th>CTR</th>
-                    <th>Pos.</th>
+                    <th id="thClicks1">Clicks</th>
+                    <th id="thImpr1">Impr.</th>
+                    <th id="thCtr1">CTR</th>
+                    <th id="thPos1">Pos.</th>
                   </tr>
                 </thead>
                 <tbody id="gscKeywordTable"></tbody>
@@ -166,8 +173,8 @@
           </article>
           <article class="panel table-card">
             <div class="card-head">
-              <h3>GSC Top Pages</h3>
-              <p>Clicks / Impressions / CTR / Position</p>
+              <h3 id="gscPageTitle">GSC Top Pages</h3>
+              <p id="gscTableSub2">Clicks / Impressions / CTR / Position</p>
             </div>
             <div class="table-wrap">
               <table>
@@ -175,10 +182,10 @@
                   <tr>
                     <th id="thGscSite2">Site</th>
                     <th id="thGscPage">Page</th>
-                    <th>Clicks</th>
-                    <th>Impr.</th>
-                    <th>CTR</th>
-                    <th>Pos.</th>
+                    <th id="thClicks2">Clicks</th>
+                    <th id="thImpr2">Impr.</th>
+                    <th id="thCtr2">CTR</th>
+                    <th id="thPos2">Pos.</th>
                   </tr>
                 </thead>
                 <tbody id="gscPageTable"></tbody>

@@ -4,21 +4,39 @@ const SITES = [
   { id: "focusstoredisplay", name: "Focus Store Display", domain: "focusstoredisplay.com", propertyId: "", color: "#ffd166" }
 ];
 
-const CHANNEL_KEYS = ["Organic Search", "Direct", "Referral", "Organic Social", "Paid Search"];
-const DEVICE_KEYS = ["desktop", "mobile", "tablet"];
+const UNKNOWN_KEYS = new Set(["", "(unknown)", "unknown", "(not set)", "not set", "未知", "(未知)"]);
 
 const state = {
   selectedSites: new Set(SITES.map((s) => s.id)),
   focusSiteId: localStorage.getItem("focus_site_id") || "oydisplay",
   lang: localStorage.getItem("ui_lang") || "zh",
+  showUnknown: localStorage.getItem("show_unknown") === "1",
   allDates: [],
+  statusText: "",
+  statusIsError: false,
   store: Object.fromEntries(
     SITES.map((s) => [
       s.id,
       {
         ga4: { source: "none", dataByDate: {}, channels: {}, devices: {}, topPages: [] },
-        leads: { total: 0, daily: {}, countries: {}, storeTypes: {}, owners: {} },
-        gsc: { siteUrl: null, error: null, kpi: { clicks: 0, impressions: 0, ctr: 0, position: 0 }, topQueries: [], topPages: [] }
+        leads: {
+          total: 0,
+          daily: {},
+          countries: {},
+          storeTypes: {},
+          owners: {},
+          countryDaily: {},
+          storeTypeDaily: {},
+          ownerDaily: {}
+        },
+        gsc: {
+          siteUrl: null,
+          error: null,
+          kpi: { clicks: 0, impressions: 0, ctr: 0, position: 0 },
+          topQueries: [],
+          topPages: [],
+          trendDaily: []
+        }
       }
     ])
   ),
@@ -27,42 +45,57 @@ const state = {
 
 const I18N = {
   zh: {
-    titleMain: "多网站追踪中心",
+    titleMain: "多站点数据追踪中心",
     labelFocus: "当前聚焦站点（固定映射）",
     labelProperty: "GA4 Property ID",
     labelSites: "站点选择（可多选）",
     labelRange: "时间范围",
     labelStart: "开始",
     labelEnd: "结束",
-    hintText: "询盘统计来自 Google Sheets（手工登记），GA4/GSC 用于流量和排名分析。",
+    labelUnknown: "显示 Unknown 分类（默认关闭）",
+    hintText: "询盘来自 Google Sheets（手动登记），GA4 / GSC 用于流量和排名分析。",
     titleOverview: "网站与询盘总览",
     cardTrendTitle: "流量趋势（GA4）",
+    cardTrendSub: "Sessions / Day",
     cardGscTrendTitle: "GSC 平均排名趋势",
+    cardGscTrendSub: "Position / Day",
     cardCountryTitle: "询盘来源国家",
     cardStoreTitle: "店铺类型分布",
     cardOwnerTitle: "跟进人占比",
+    sheetLeadsLabel: "Google Sheet Leads",
     tableLeadSummaryTitle: "站点询盘汇总",
     tableLeadSummarySub: "按当前时间范围统计",
     thSite: "站点",
+    thLeads: "询盘",
     thTopCountry: "Top 国家",
     thTopStore: "Top 店铺类型",
     thTopOwner: "Top 跟进人",
+    gscKeywordTitle: "GSC Top Keywords",
+    gscPageTitle: "GSC Top Pages",
+    gscTableSub: "Clicks / Impressions / CTR / Position",
     thGscSite: "站点",
     thGscKeyword: "关键词",
     thGscPage: "页面",
+    thClicks: "Clicks",
+    thImpr: "Impr.",
+    thCtr: "CTR",
+    thPos: "Pos.",
     btnRefresh: "刷新数据",
     btnCheck: "校验映射",
-    statusWaiting: "等待连接",
-    statusSyncing: "正在同步 GA4 + Sheet + GSC...",
-    statusSynced: "数据同步完成：GA4 + Google Sheets + GSC。",
-    kpiLeads: "询盘数 (Sheet)",
+    statusWaiting: "等待同步",
+    statusSyncing: "正在同步 GA4 + Google Sheet + GSC...",
+    statusSynced: "数据同步完成：GA4 + Google Sheet + GSC",
+    kpiLeads: "询盘数（Sheet）",
     kpiLeadRate: "询盘率",
     kpiClicks: "GSC 点击",
     kpiImpr: "GSC 展现",
     kpiCtr: "GSC CTR",
     kpiPos: "GSC 平均排名",
     noBaseline: "无基线",
-    vsPrevious: "较上期"
+    vsPrevious: "较上一周期",
+    sitesUnit: "个站点",
+    rangeJoiner: "至",
+    sheetOnly: "仅 Sheet"
   },
   en: {
     titleMain: "Multi-Site Tracking Hub",
@@ -72,27 +105,39 @@ const I18N = {
     labelRange: "Date Range",
     labelStart: "Start",
     labelEnd: "End",
+    labelUnknown: "Show Unknown categories (off by default)",
     hintText: "Leads come from Google Sheets. GA4/GSC are used for traffic and ranking analysis.",
     titleOverview: "Site & Lead Overview",
     cardTrendTitle: "Traffic Trend (GA4)",
+    cardTrendSub: "Sessions / Day",
     cardGscTrendTitle: "GSC Avg Position Trend",
+    cardGscTrendSub: "Position / Day",
     cardCountryTitle: "Lead Countries",
     cardStoreTitle: "Store Type Distribution",
     cardOwnerTitle: "Owner Distribution",
+    sheetLeadsLabel: "Google Sheet Leads",
     tableLeadSummaryTitle: "Lead Summary by Site",
     tableLeadSummarySub: "Current date range",
     thSite: "Site",
+    thLeads: "Leads",
     thTopCountry: "Top Country",
     thTopStore: "Top Store Type",
     thTopOwner: "Top Owner",
+    gscKeywordTitle: "GSC Top Keywords",
+    gscPageTitle: "GSC Top Pages",
+    gscTableSub: "Clicks / Impressions / CTR / Position",
     thGscSite: "Site",
     thGscKeyword: "Keyword",
     thGscPage: "Page",
+    thClicks: "Clicks",
+    thImpr: "Impr.",
+    thCtr: "CTR",
+    thPos: "Pos.",
     btnRefresh: "Refresh Data",
     btnCheck: "Check Mapping",
     statusWaiting: "Waiting for sync",
-    statusSyncing: "Syncing GA4 + Sheet + GSC...",
-    statusSynced: "Data synced: GA4 + Google Sheets + GSC.",
+    statusSyncing: "Syncing GA4 + Google Sheet + GSC...",
+    statusSynced: "Data synced: GA4 + Google Sheet + GSC",
     kpiLeads: "Leads (Sheet)",
     kpiLeadRate: "Lead Rate",
     kpiClicks: "GSC Clicks",
@@ -100,7 +145,10 @@ const I18N = {
     kpiCtr: "GSC CTR",
     kpiPos: "GSC Avg Position",
     noBaseline: "No baseline",
-    vsPrevious: "vs previous"
+    vsPrevious: "vs previous",
+    sitesUnit: "sites",
+    rangeJoiner: "to",
+    sheetOnly: "Sheet only"
   }
 };
 
@@ -137,17 +185,12 @@ function diffDays(start, end) {
 }
 
 function fmtNum(n) {
-  return new Intl.NumberFormat("zh-CN").format(Math.round(n || 0));
+  const locale = state.lang === "zh" ? "zh-CN" : "en-US";
+  return new Intl.NumberFormat(locale).format(Math.round(n || 0));
 }
 
 function fmtPct(v, digits = 2) {
   return `${((v || 0) * 100).toFixed(digits)}%`;
-}
-
-function fmtDuration(sec) {
-  const m = Math.floor((sec || 0) / 60);
-  const s = Math.round((sec || 0) % 60);
-  return `${m}m ${s}s`;
 }
 
 function delta(current, prev, inverse = false) {
@@ -159,6 +202,8 @@ function delta(current, prev, inverse = false) {
 }
 
 function setStatus(msg, isError = false) {
+  state.statusText = msg;
+  state.statusIsError = isError;
   const el = document.getElementById("ga4Status");
   el.textContent = msg;
   el.style.color = isError ? "#ff7b72" : "#a8b8d8";
@@ -172,7 +217,7 @@ function setFocusSite(siteId) {
   state.focusSiteId = siteId;
   localStorage.setItem("focus_site_id", siteId);
   const site = getFocusSite();
-  document.getElementById("propertyIdInput").value = site.propertyId || "(sheet-only)";
+  document.getElementById("propertyIdInput").value = site.propertyId || t("sheetOnly");
 }
 
 function setupDateRange() {
@@ -191,24 +236,36 @@ function getRangeDates() {
   });
 }
 
-function topNEntries(map, n = 8, options = {}) {
-  const hideUnknown = options.hideUnknown || false;
-  const unknownKeys = new Set(["(Unknown)", "(unknown)", "Unknown", ""]);
+function isUnknownKey(key) {
+  const normalized = String(key || "").trim().toLowerCase();
+  return UNKNOWN_KEYS.has(normalized);
+}
+
+function topNEntries(map, n = 8, hideUnknown = false) {
   return Object.entries(map || {})
-    .filter(([k, v]) => Number(v || 0) > 0)
-    .filter(([k]) => (hideUnknown ? !unknownKeys.has(String(k || "").trim()) : true))
+    .filter(([, v]) => Number(v || 0) > 0)
+    .filter(([k]) => (hideUnknown ? !isUnknownKey(k) : true))
     .sort((a, b) => Number(b[1]) - Number(a[1]))
     .slice(0, n);
 }
 
-function sumMaps(maps) {
-  const out = {};
-  maps.forEach((m) => {
-    Object.entries(m || {}).forEach(([k, v]) => {
-      out[k] = (out[k] || 0) + Number(v || 0);
-    });
+function mergeCountMap(target, source) {
+  Object.entries(source || {}).forEach(([key, value]) => {
+    target[key] = (target[key] || 0) + Number(value || 0);
   });
-  return out;
+  return target;
+}
+
+function mapForDateRangeFromDaily(leads, dailyField, fallbackField, dates) {
+  const out = {};
+  const dailyMap = leads[dailyField] || {};
+  if (Object.keys(dailyMap).length) {
+    dates.forEach((d) => {
+      mergeCountMap(out, dailyMap[d] || {});
+    });
+    return out;
+  }
+  return { ...(leads[fallbackField] || {}) };
 }
 
 async function loadGa4ForProperty(propertyId) {
@@ -273,23 +330,42 @@ function applyLanguage() {
     ["labelRange", "labelRange"],
     ["labelStart", "labelStart"],
     ["labelEnd", "labelEnd"],
+    ["labelUnknown", "labelUnknown"],
     ["hintText", "hintText"],
     ["titleOverview", "titleOverview"],
     ["cardTrendTitle", "cardTrendTitle"],
+    ["cardTrendSub", "cardTrendSub"],
     ["cardGscTrendTitle", "cardGscTrendTitle"],
+    ["cardGscTrendSub", "cardGscTrendSub"],
     ["cardCountryTitle", "cardCountryTitle"],
     ["cardStoreTitle", "cardStoreTitle"],
     ["cardOwnerTitle", "cardOwnerTitle"],
+    ["sheetLeadsLabel1", "sheetLeadsLabel"],
+    ["sheetLeadsLabel2", "sheetLeadsLabel"],
+    ["sheetLeadsLabel3", "sheetLeadsLabel"],
     ["tableLeadSummaryTitle", "tableLeadSummaryTitle"],
     ["tableLeadSummarySub", "tableLeadSummarySub"],
     ["thSite", "thSite"],
+    ["thLeads", "thLeads"],
     ["thTopCountry", "thTopCountry"],
     ["thTopStore", "thTopStore"],
     ["thTopOwner", "thTopOwner"],
+    ["gscKeywordTitle", "gscKeywordTitle"],
+    ["gscPageTitle", "gscPageTitle"],
+    ["gscTableSub1", "gscTableSub"],
+    ["gscTableSub2", "gscTableSub"],
     ["thGscSite1", "thGscSite"],
     ["thGscSite2", "thGscSite"],
     ["thGscKeyword", "thGscKeyword"],
-    ["thGscPage", "thGscPage"]
+    ["thGscPage", "thGscPage"],
+    ["thClicks1", "thClicks"],
+    ["thClicks2", "thClicks"],
+    ["thImpr1", "thImpr"],
+    ["thImpr2", "thImpr"],
+    ["thCtr1", "thCtr"],
+    ["thCtr2", "thCtr"],
+    ["thPos1", "thPos"],
+    ["thPos2", "thPos"]
   ];
 
   map.forEach(([id, key]) => {
@@ -302,12 +378,14 @@ function applyLanguage() {
   if (refreshBtn) refreshBtn.textContent = t("btnRefresh");
   if (checkBtn) checkBtn.textContent = t("btnCheck");
 
-  if (document.getElementById("ga4Status")?.textContent?.trim() === "" || document.getElementById("ga4Status")?.textContent === "等待连接") {
-    setStatus(t("statusWaiting"));
-  }
-
   document.getElementById("langZhBtn")?.classList.toggle("active", state.lang === "zh");
   document.getElementById("langEnBtn")?.classList.toggle("active", state.lang === "en");
+
+  if (state.statusText) {
+    setStatus(state.statusText, state.statusIsError);
+  } else {
+    setStatus(t("statusWaiting"));
+  }
 }
 
 function renderSiteList() {
@@ -323,15 +401,16 @@ function renderSiteList() {
       <div>
         <strong>${site.name}</strong>
         <div class="site-domain">${site.domain}</div>
-        <div class="site-domain">Property: ${site.propertyId || "Sheet only"}</div>
+        <div class="site-domain">Property: ${site.propertyId || t("sheetOnly")}</div>
       </div>
       <span class="site-dot" style="background:${site.color};"></span>
     `;
-    el.addEventListener("click", () => {
+    el.addEventListener("click", async () => {
       if (selected && state.selectedSites.size > 1) state.selectedSites.delete(site.id);
       else state.selectedSites.add(site.id);
       setFocusSite(site.id);
       renderSiteList();
+      await refreshGscOnly();
       renderDashboard();
     });
     root.appendChild(el);
@@ -355,8 +434,7 @@ function aggregateForSelected(siteIds, dates) {
     trendBySite: {},
     countries: {},
     storeTypes: {},
-    owners: {}
-    ,
+    owners: {},
     gscClicks: 0,
     gscImpressions: 0,
     gscCtrWeighted: 0,
@@ -364,10 +442,6 @@ function aggregateForSelected(siteIds, dates) {
     gscCtr: 0,
     gscPosition: 0
   };
-
-  const countryMaps = [];
-  const storeTypeMaps = [];
-  const ownerMaps = [];
 
   siteIds.forEach((siteId) => {
     const item = state.store[siteId];
@@ -390,9 +464,9 @@ function aggregateForSelected(siteIds, dates) {
       out.leads += Number(item.leads.daily[d] || 0);
     });
 
-    countryMaps.push(item.leads.countries);
-    storeTypeMaps.push(item.leads.storeTypes);
-    ownerMaps.push(item.leads.owners);
+    mergeCountMap(out.countries, mapForDateRangeFromDaily(item.leads, "countryDaily", "countries", dates));
+    mergeCountMap(out.storeTypes, mapForDateRangeFromDaily(item.leads, "storeTypeDaily", "storeTypes", dates));
+    mergeCountMap(out.owners, mapForDateRangeFromDaily(item.leads, "ownerDaily", "owners", dates));
 
     const gsc = item.gsc?.kpi || {};
     out.gscClicks += Number(gsc.clicks || 0);
@@ -401,9 +475,6 @@ function aggregateForSelected(siteIds, dates) {
     out.gscPositionWeighted += Number(gsc.position || 0) * Number(gsc.impressions || 0);
   });
 
-  out.countries = sumMaps(countryMaps);
-  out.storeTypes = sumMaps(storeTypeMaps);
-  out.owners = sumMaps(ownerMaps);
   out.conversionRate = out.sessions ? out.conversions / out.sessions : 0;
   out.leadRate = out.sessions ? out.leads / out.sessions : 0;
   out.bounceRate = out.sessions ? out.bounceWeighted / out.sessions : 0;
@@ -532,16 +603,15 @@ function renderGscTrendChart(dates, siteIds) {
   );
 }
 
-function renderHorizontalBar(canvasId, chartName, titleMap, colors) {
-  let entries = topNEntries(titleMap, 8, { hideUnknown: true });
-  if (!entries.length) entries = topNEntries(titleMap, 8, { hideUnknown: false });
+function renderHorizontalBar(canvasId, chartName, map, color) {
+  const entries = topNEntries(map, 8, !state.showUnknown);
   upsertChart(
     chartName,
     {
       type: "bar",
       data: {
         labels: entries.map((e) => e[0]),
-        datasets: [{ data: entries.map((e) => e[1]), backgroundColor: colors }]
+        datasets: [{ data: entries.map((e) => e[1]), backgroundColor: color }]
       },
       options: {
         indexAxis: "y",
@@ -558,6 +628,12 @@ function renderHorizontalBar(canvasId, chartName, titleMap, colors) {
   );
 }
 
+function topLabelForSiteRange(siteId, dates, dimDaily, dimFallback) {
+  const leads = state.store[siteId].leads;
+  const map = mapForDateRangeFromDaily(leads, dimDaily, dimFallback, dates);
+  return topNEntries(map, 1, !state.showUnknown)[0]?.[0] || "-";
+}
+
 function renderLeadSummaryTable(siteIds, dates) {
   const tbody = document.getElementById("leadSummaryTable");
   tbody.innerHTML = siteIds
@@ -565,9 +641,9 @@ function renderLeadSummaryTable(siteIds, dates) {
       const site = SITES.find((s) => s.id === siteId);
       const leads = state.store[siteId].leads;
       const total = dates.reduce((a, d) => a + Number(leads.daily[d] || 0), 0);
-      const topCountry = topNEntries(leads.countries, 1)[0]?.[0] || "-";
-      const topStore = topNEntries(leads.storeTypes, 1)[0]?.[0] || "-";
-      const topOwner = topNEntries(leads.owners, 1)[0]?.[0] || "-";
+      const topCountry = topLabelForSiteRange(siteId, dates, "countryDaily", "countries");
+      const topStore = topLabelForSiteRange(siteId, dates, "storeTypeDaily", "storeTypes");
+      const topOwner = topLabelForSiteRange(siteId, dates, "ownerDaily", "owners");
       return `<tr>
         <td>${site.domain}</td>
         <td>${fmtNum(total)}</td>
@@ -585,7 +661,7 @@ function renderGscTables(siteIds) {
   siteIds.forEach((siteId) => {
     const site = SITES.find((s) => s.id === siteId);
     const gsc = state.store[siteId].gsc || {};
-    (gsc.topQueries || []).slice(0, 8).forEach((r) => {
+    (gsc.topQueries || []).slice(0, 12).forEach((r) => {
       queryRows.push({
         site: site.domain,
         key: r.query || "(not set)",
@@ -595,7 +671,7 @@ function renderGscTables(siteIds) {
         position: Number(r.position || 0)
       });
     });
-    (gsc.topPages || []).slice(0, 8).forEach((r) => {
+    (gsc.topPages || []).slice(0, 12).forEach((r) => {
       pageRows.push({
         site: site.domain,
         key: r.page || "(not set)",
@@ -628,10 +704,8 @@ function renderGscTables(siteIds) {
 }
 
 function renderHeader(siteIds, dates) {
-  const unit = state.lang === "zh" ? "个站点" : "sites";
-  const joiner = state.lang === "zh" ? "至" : "to";
-  document.getElementById("selectedSummary").textContent = `${siteIds.length} ${unit}`;
-  document.getElementById("rangeSummary").textContent = `${dates[0] || "-"} ${joiner} ${dates[dates.length - 1] || "-"}`;
+  document.getElementById("selectedSummary").textContent = `${siteIds.length} ${t("sitesUnit")}`;
+  document.getElementById("rangeSummary").textContent = `${dates[0] || "-"} ${t("rangeJoiner")} ${dates[dates.length - 1] || "-"}`;
 }
 
 function renderDashboard() {
@@ -652,18 +726,34 @@ function renderDashboard() {
   renderGscTables(siteIds);
 }
 
+async function refreshGscOnly() {
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  const selected = SITES.filter((s) => state.selectedSites.has(s.id));
+  const gscPayload = await loadGscSummary(startDate, endDate, selected.map((s) => s.id));
+  Object.entries(gscPayload.perSite || {}).forEach(([siteId, info]) => {
+    if (!state.store[siteId]) return;
+    state.store[siteId].gsc = {
+      siteUrl: info.siteUrl || null,
+      error: info.error || null,
+      kpi: info.kpi || { clicks: 0, impressions: 0, ctr: 0, position: 0 },
+      topQueries: info.topQueries || [],
+      topPages: info.topPages || [],
+      trendDaily: info.trendDaily || []
+    };
+  });
+}
+
 async function refreshAllData() {
   setStatus(t("statusSyncing"));
-
   const selected = SITES.filter((s) => state.selectedSites.has(s.id));
 
   await Promise.all(
     selected.map(async (site) => {
       if (!site.propertyId) return;
       try {
-        const ga4 = await loadGa4ForProperty(site.propertyId);
-        state.store[site.id].ga4 = ga4;
-      } catch (err) {
+        state.store[site.id].ga4 = await loadGa4ForProperty(site.propertyId);
+      } catch {
         state.store[site.id].ga4 = { source: "error", dataByDate: {}, channels: {}, devices: {}, topPages: [] };
       }
     })
@@ -678,29 +768,19 @@ async function refreshAllData() {
         daily: bucket.daily || {},
         countries: bucket.countries || {},
         storeTypes: bucket.storeTypes || {},
-        owners: bucket.owners || {}
+        owners: bucket.owners || {},
+        countryDaily: bucket.countryDaily || {},
+        storeTypeDaily: bucket.storeTypeDaily || {},
+        ownerDaily: bucket.ownerDaily || {}
       };
     });
-    setStatus(t("statusSynced"));
   } catch (err) {
     setStatus(`GA4 synced, Sheet failed: ${err.message}`, true);
+    return;
   }
 
   try {
-    const startDate = document.getElementById("startDate").value;
-    const endDate = document.getElementById("endDate").value;
-    const gscPayload = await loadGscSummary(startDate, endDate, selected.map((s) => s.id));
-    Object.entries(gscPayload.perSite || {}).forEach(([siteId, info]) => {
-      if (!state.store[siteId]) return;
-      state.store[siteId].gsc = {
-        siteUrl: info.siteUrl || null,
-        error: info.error || null,
-        kpi: info.kpi || { clicks: 0, impressions: 0, ctr: 0, position: 0 },
-        topQueries: info.topQueries || [],
-        topPages: info.topPages || [],
-        trendDaily: info.trendDaily || []
-      };
-    });
+    await refreshGscOnly();
     setStatus(t("statusSynced"));
   } catch (err) {
     setStatus(`GA4/Sheet synced, GSC failed: ${err.message}`, true);
@@ -720,11 +800,22 @@ async function checkMapping() {
 }
 
 function wireEvents() {
-  document.getElementById("startDate").addEventListener("change", renderDashboard);
-  document.getElementById("endDate").addEventListener("change", renderDashboard);
+  const rerenderWithGscRefresh = async () => {
+    try {
+      setStatus(t("statusSyncing"));
+      await refreshGscOnly();
+      setStatus(t("statusSynced"));
+    } catch (err) {
+      setStatus(`GSC refresh failed: ${err.message}`, true);
+    }
+    renderDashboard();
+  };
+
+  document.getElementById("startDate").addEventListener("change", rerenderWithGscRefresh);
+  document.getElementById("endDate").addEventListener("change", rerenderWithGscRefresh);
 
   document.querySelectorAll(".quick-range button[data-days]").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       document.querySelectorAll(".quick-range button[data-days]").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       const days = Number(btn.dataset.days);
@@ -732,8 +823,14 @@ function wireEvents() {
       const start = addDays(end, -(days - 1));
       document.getElementById("startDate").value = formatDate(start);
       document.getElementById("endDate").value = formatDate(end);
-      renderDashboard();
+      await rerenderWithGscRefresh();
     });
+  });
+
+  document.getElementById("toggleUnknown").addEventListener("change", () => {
+    state.showUnknown = document.getElementById("toggleUnknown").checked;
+    localStorage.setItem("show_unknown", state.showUnknown ? "1" : "0");
+    renderDashboard();
   });
 
   document.getElementById("connectGa4Btn").addEventListener("click", async () => {
@@ -745,16 +842,21 @@ function wireEvents() {
     await checkMapping();
   });
 
-  document.getElementById("langZhBtn")?.addEventListener("click", () => {
+  document.getElementById("langZhBtn").addEventListener("click", () => {
     state.lang = "zh";
     localStorage.setItem("ui_lang", "zh");
     applyLanguage();
+    setFocusSite(state.focusSiteId);
+    renderSiteList();
     renderDashboard();
   });
-  document.getElementById("langEnBtn")?.addEventListener("click", () => {
+
+  document.getElementById("langEnBtn").addEventListener("click", () => {
     state.lang = "en";
     localStorage.setItem("ui_lang", "en");
     applyLanguage();
+    setFocusSite(state.focusSiteId);
+    renderSiteList();
     renderDashboard();
   });
 
@@ -766,9 +868,10 @@ function wireEvents() {
 async function init() {
   state.allDates = makeDateSpan(150);
   setupDateRange();
-  setFocusSite(state.focusSiteId);
   applyLanguage();
+  setFocusSite(state.focusSiteId);
   renderSiteList();
+  document.getElementById("toggleUnknown").checked = state.showUnknown;
   wireEvents();
   renderDashboard();
   await refreshAllData();

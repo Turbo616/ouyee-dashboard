@@ -3,10 +3,10 @@ import { getAccessToken, googleApiRequest, json, simplifyApiError } from "../../
 const DEFAULT_SPREADSHEET_ID = "1YQIJ7jHgiJi0YtXJKMSYhuqhbILwmN38KfTpvTWmW90";
 
 const TAB_RULES = [
-  { siteId: "ouyedisplay", domain: "ouyedisplay.com", mode: "exact", key: "\u6b27\u91ce1", minDate: "2025-01-01" },
+  { siteId: "ouyedisplay", domain: "ouyedisplay.com", mode: "exact", key: "欧野1", minDate: "2025-01-01" },
   { siteId: "ouyedisplay", domain: "ouyedisplay.com", mode: "contains", key: "whatsapp", minDate: "2025-01-01" },
-  { siteId: "oydisplay", domain: "oydisplay.com", mode: "exact", key: "\u6b27\u91ce2" },
-  { siteId: "focusstoredisplay", domain: "focusstoredisplay.com", mode: "exact", key: "\u89c2\u7b51" }
+  { siteId: "oydisplay", domain: "oydisplay.com", mode: "exact", key: "欧野2" },
+  { siteId: "focusstoredisplay", domain: "focusstoredisplay.com", mode: "exact", key: "观筑" }
 ];
 
 // A channel, B date, C name, D email, E phone, F country, G store type, H message, I owner, J source URL
@@ -23,17 +23,30 @@ function normalize(s) {
 function parseDateToIso(input) {
   const s = String(input || "").trim();
   if (!s) return null;
+
   const m1 = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
   if (m1) return `${m1[1]}-${String(m1[2]).padStart(2, "0")}-${String(m1[3]).padStart(2, "0")}`;
+
   const m2 = s.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日$/);
   if (m2) return `${m2[1]}-${String(m2[2]).padStart(2, "0")}-${String(m2[3]).padStart(2, "0")}`;
+
   const d = new Date(s);
   if (Number.isNaN(d.getTime())) return null;
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function newBucket(domain) {
-  return { domain, total: 0, daily: {}, countries: {}, storeTypes: {}, owners: {} };
+  return {
+    domain,
+    total: 0,
+    daily: {},
+    countries: {},
+    storeTypes: {},
+    owners: {},
+    countryDaily: {},
+    storeTypeDaily: {},
+    ownerDaily: {}
+  };
 }
 
 function canonicalKey(value) {
@@ -48,9 +61,16 @@ function canonicalKey(value) {
   return raw;
 }
 
-function addCount(map, key) {
+function addCount(map, key, increment = 1) {
   const k = canonicalKey(key);
-  map[k] = (map[k] || 0) + 1;
+  map[k] = (map[k] || 0) + increment;
+}
+
+function addDailyDimension(dailyMap, date, key) {
+  const d = String(date || "");
+  if (!d) return;
+  if (!dailyMap[d]) dailyMap[d] = {};
+  addCount(dailyMap[d], key);
 }
 
 function applyRow(bucket, date, country, storeType, owner) {
@@ -59,6 +79,9 @@ function applyRow(bucket, date, country, storeType, owner) {
   addCount(bucket.countries, country);
   addCount(bucket.storeTypes, storeType);
   addCount(bucket.owners, owner);
+  addDailyDimension(bucket.countryDaily, date, country);
+  addDailyDimension(bucket.storeTypeDaily, date, storeType);
+  addDailyDimension(bucket.ownerDaily, date, owner);
 }
 
 function inferSiteByUrl(url) {
