@@ -11,7 +11,7 @@ This project is ready for Cloudflare Pages deployment.
   - `functions/api/ga4/dashboard.js`
   - `functions/api/ga4/enable-services.js` (optional helper)
   - `functions/api/leads/sheet.js` (Google Sheet leads source)
-  - `functions/api/gsc/summary.js` (Search Console keywords/pages)
+- `functions/api/gsc/summary.js` (Search Console keywords/pages)
 
 ## Deploy to Cloudflare Pages
 
@@ -56,6 +56,10 @@ For GSC API data, add the same service account as user/owner to each Search Cons
 - `sc-domain:oydisplay.com` or `https://oydisplay.com/`
 - `sc-domain:ouyedisplay.com` or `https://ouyedisplay.com/`
 - `sc-domain:focusstoredisplay.com` or `https://focusstoredisplay.com/`
+
+Notes:
+- The UI supports language switch (`中文` / `EN`).
+- In leads aggregation, rows from tabs `欧野1` and `欧野-whatsapp` before `2025-01-01` are excluded.
 
 ### Fast copy from local JSON
 

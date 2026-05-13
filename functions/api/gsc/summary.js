@@ -92,21 +92,22 @@ export const onRequestGet = async (context) => {
         rowLimit: 20
       };
 
-      const [kpiRes, qRes, pRes] = await Promise.all([
-        queryGsc(token, siteUrl, { ...queryBody, dimensions: ["date"], rowLimit: 1 }),
+      const [kpiRes, qRes, pRes, trendRes] = await Promise.all([
+        queryGsc(token, siteUrl, { ...queryBody, rowLimit: 1 }),
         queryGsc(token, siteUrl, { ...queryBody, dimensions: ["query"], rowLimit: 20 }),
-        queryGsc(token, siteUrl, { ...queryBody, dimensions: ["page"], rowLimit: 20 })
+        queryGsc(token, siteUrl, { ...queryBody, dimensions: ["page"], rowLimit: 20 }),
+        queryGsc(token, siteUrl, { ...queryBody, dimensions: ["date"], rowLimit: 5000 })
       ]);
-
-      const kpiRows = cleanRows(kpiRes.rows || [], ["date"]);
+      const kpiRows = cleanRows(kpiRes.rows || [], []);
       const topQueries = cleanRows(qRes.rows || [], ["query"]);
       const topPages = cleanRows(pRes.rows || [], ["page"]);
+      const trendDaily = cleanRows(trendRes?.rows || [], ["date"]).sort((a, b) => String(a.date).localeCompare(String(b.date)));
 
       let clicks = 0;
       let impressions = 0;
       let ctrWeighted = 0;
       let posWeighted = 0;
-      const base = topQueries.length ? topQueries : kpiRows;
+      const base = kpiRows.length ? kpiRows : topQueries;
       base.forEach((r) => {
         clicks += r.clicks;
         impressions += r.impressions;
@@ -122,7 +123,8 @@ export const onRequestGet = async (context) => {
         error: null,
         kpi: { clicks, impressions, ctr, position },
         topQueries,
-        topPages
+        topPages,
+        trendDaily
       };
     }
 

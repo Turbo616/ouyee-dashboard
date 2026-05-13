@@ -20,13 +20,17 @@
       <aside class="panel sidebar">
         <div class="title-wrap">
           <p class="eyebrow">Data Hub</p>
-          <h1>多网站追踪中心</h1>
+          <h1 id="titleMain">多网站追踪中心</h1>
+          <div class="quick-range">
+            <button id="langZhBtn" type="button" class="active">中文</button>
+            <button id="langEnBtn" type="button">EN</button>
+          </div>
         </div>
 
         <div class="filters">
-          <p class="section-title">当前聚焦站点（固定映射）</p>
+          <p id="labelFocus" class="section-title">当前聚焦站点（固定映射）</p>
           <label>
-            GA4 Property ID
+            <span id="labelProperty">GA4 Property ID</span>
             <input id="propertyIdInput" type="text" />
           </label>
           <div class="quick-range">
@@ -37,19 +41,19 @@
         </div>
 
         <div class="filters">
-          <p class="section-title">站点选择（可多选）</p>
+          <p id="labelSites" class="section-title">站点选择（可多选）</p>
           <div id="siteList" class="site-list"></div>
         </div>
 
         <div class="filters">
-          <p class="section-title">时间范围</p>
+          <p id="labelRange" class="section-title">时间范围</p>
           <div class="date-row">
             <label>
-              Start
+              <span id="labelStart">Start</span>
               <input id="startDate" type="date" />
             </label>
             <label>
-              End
+              <span id="labelEnd">End</span>
               <input id="endDate" type="date" />
             </label>
           </div>
@@ -61,7 +65,7 @@
         </div>
 
         <div class="hint">
-          <p>询盘统计来自 Google Sheets（手工登记），GA4 主要用于流量辅助分析。</p>
+          <p id="hintText">询盘统计来自 Google Sheets（手工登记），GA4 主要用于流量辅助分析。</p>
         </div>
       </aside>
 
@@ -69,7 +73,7 @@
         <header class="panel header-card">
           <div>
             <p class="eyebrow">Overview</p>
-            <h2>网站与询盘总览</h2>
+            <h2 id="titleOverview">网站与询盘总览</h2>
           </div>
           <div class="header-meta">
             <span id="selectedSummary">0 sites</span>
@@ -82,28 +86,35 @@
         <section class="charts-grid">
           <article class="panel chart-card">
             <div class="card-head">
-              <h3>流量趋势（GA4）</h3>
+              <h3 id="cardTrendTitle">流量趋势（GA4）</h3>
               <p>Sessions / Day</p>
             </div>
             <canvas id="trendChart"></canvas>
           </article>
           <article class="panel chart-card">
             <div class="card-head">
-              <h3>询盘来源国家</h3>
+              <h3 id="cardGscTrendTitle">GSC 平均排名趋势</h3>
+              <p>Position / Day</p>
+            </div>
+            <canvas id="gscTrendChart"></canvas>
+          </article>
+          <article class="panel chart-card">
+            <div class="card-head">
+              <h3 id="cardCountryTitle">询盘来源国家</h3>
               <p>Google Sheet Leads</p>
             </div>
             <canvas id="countryChart"></canvas>
           </article>
           <article class="panel chart-card">
             <div class="card-head">
-              <h3>店铺类型分布</h3>
+              <h3 id="cardStoreTitle">店铺类型分布</h3>
               <p>Google Sheet Leads</p>
             </div>
             <canvas id="storeTypeChart"></canvas>
           </article>
           <article class="panel chart-card">
             <div class="card-head">
-              <h3>跟进人占比</h3>
+              <h3 id="cardOwnerTitle">跟进人占比</h3>
               <p>Google Sheet Leads</p>
             </div>
             <canvas id="ownerChart"></canvas>
@@ -112,18 +123,18 @@
 
         <article class="panel table-card">
           <div class="card-head">
-            <h3>站点询盘汇总</h3>
-            <p>按当前时间范围统计</p>
+            <h3 id="tableLeadSummaryTitle">站点询盘汇总</h3>
+            <p id="tableLeadSummarySub">按当前时间范围统计</p>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>站点</th>
+                  <th id="thSite">站点</th>
                   <th>Leads</th>
-                  <th>Top 国家</th>
-                  <th>Top 店铺类型</th>
-                  <th>Top 跟进人</th>
+                  <th id="thTopCountry">Top 国家</th>
+                  <th id="thTopStore">Top 店铺类型</th>
+                  <th id="thTopOwner">Top 跟进人</th>
                 </tr>
               </thead>
               <tbody id="leadSummaryTable"></tbody>
@@ -141,8 +152,8 @@
               <table>
                 <thead>
                   <tr>
-                    <th>Site</th>
-                    <th>Keyword</th>
+                    <th id="thGscSite1">Site</th>
+                    <th id="thGscKeyword">Keyword</th>
                     <th>Clicks</th>
                     <th>Impr.</th>
                     <th>CTR</th>
@@ -162,8 +173,8 @@
               <table>
                 <thead>
                   <tr>
-                    <th>Site</th>
-                    <th>Page</th>
+                    <th id="thGscSite2">Site</th>
+                    <th id="thGscPage">Page</th>
                     <th>Clicks</th>
                     <th>Impr.</th>
                     <th>CTR</th>
