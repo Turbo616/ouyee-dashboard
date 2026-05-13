@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>多站点数据追踪仪表盘</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <main class="layout">
+      <aside class="panel sidebar">
+        <div class="title-wrap">
+          <p class="eyebrow">Data Hub</p>
+          <h1>网站追踪中心</h1>
+        </div>
+        <div class="filters">
+          <p class="section-title">GA4 连接</p>
+          <label>
+            Property ID
+            <input id="propertyIdInput" type="text" placeholder="例如 123456789" />
+          </label>
+          <div class="quick-range">
+            <button id="connectGa4Btn" type="button">连接 GA4</button>
+            <button id="refreshGa4Btn" type="button">刷新数据</button>
+          </div>
+          <div class="quick-range">
+            <button id="discoverGa4Btn" type="button">自动识别 Property</button>
+          </div>
+          <p id="ga4Status" class="status-line">等待连接</p>
+        </div>
+        <div class="filters">
+          <p class="section-title">站点选择</p>
+          <div id="siteList" class="site-list"></div>
+        </div>
+        <div class="filters">
+          <p class="section-title">时间范围</p>
+          <div class="date-row">
+            <label>
+              从
+              <input id="startDate" type="date" />
+            </label>
+            <label>
+              到
+              <input id="endDate" type="date" />
+            </label>
+          </div>
+          <div class="quick-range">
+            <button data-days="7">近7天</button>
+            <button data-days="30" class="active">近30天</button>
+            <button data-days="90">近90天</button>
+          </div>
+        </div>
+        <div class="hint">
+          <p>真实模式：通过 Cloudflare Functions 的 /api/ga4 接口读取 GA4；失败时回退模拟数据。</p>
+        </div>
+      </aside>
+
+      <section class="content">
+        <header class="panel header-card">
+          <div>
+            <p class="eyebrow">Overview</p>
+            <h2>多网站运营总览</h2>
+          </div>
+          <div class="header-meta">
+            <span id="selectedSummary">0 个站点</span>
+            <span id="rangeSummary">-</span>
+          </div>
+        </header>
+
+        <section id="kpiGrid" class="kpi-grid"></section>
+
+        <section class="charts-grid">
+          <article class="panel chart-card">
+            <div class="card-head">
+              <h3>流量趋势</h3>
+              <p>Sessions / 天</p>
+            </div>
+            <canvas id="trendChart"></canvas>
+          </article>
+          <article class="panel chart-card">
+            <div class="card-head">
+              <h3>流量来源</h3>
+              <p>Aggregated Channels</p>
+            </div>
+            <canvas id="channelChart"></canvas>
+          </article>
+          <article class="panel chart-card">
+            <div class="card-head">
+              <h3>设备分布</h3>
+              <p>Desktop / Mobile / Tablet</p>
+            </div>
+            <canvas id="deviceChart"></canvas>
+          </article>
+          <article class="panel chart-card">
+            <div class="card-head">
+              <h3>重点预警</h3>
+              <p>Bounce & 流量波动</p>
+            </div>
+            <ul id="alertList" class="alert-list"></ul>
+          </article>
+        </section>
+
+        <article class="panel table-card">
+          <div class="card-head">
+            <h3>Top 页面</h3>
+            <p>按访问量排序</p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>站点</th>
+                  <th>页面</th>
+                  <th>Sessions</th>
+                  <th>Conversions</th>
+                </tr>
+              </thead>
+              <tbody id="topPageTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>

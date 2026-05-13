@@ -1,0 +1,4 @@
+GA4_CLIENT_EMAIL=codex-581@quick-flame-492901-s4.iam.gserviceaccount.com
+GA4_PROJECT_ID=quick-flame-492901-s4
+# Keep multiline PEM format exactly as in service account JSON.
+GA4_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_CONTENT\n-----END PRIVATE KEY-----\n"
