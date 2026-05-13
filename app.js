@@ -1,16 +1,41 @@
-const SITES = [{ id: "oydisplay", name: "OYDisplay 主站", domain: "oydisplay.com", color: "#00d4ff" }];
+const SITES = [
+  {
+    id: "oydisplay",
+    name: "OYDisplay",
+    domain: "oydisplay.com",
+    propertyId: "484489968",
+    color: "#00d4ff"
+  },
+  {
+    id: "ouyedisplay",
+    name: "OUYEE Display",
+    domain: "ouyedisplay.com",
+    propertyId: "358897531",
+    color: "#1dff9b"
+  }
+];
+
 const CHANNEL_KEYS = ["Organic Search", "Direct", "Referral", "Organic Social", "Paid Search"];
 const DEVICE_KEYS = ["desktop", "mobile", "tablet"];
 
 const state = {
   selectedSites: new Set(SITES.map((s) => s.id)),
-  data: {},
+  focusSiteId: localStorage.getItem("focus_site_id") || "oydisplay",
   allDates: [],
-  source: "mock",
-  propertyId: localStorage.getItem("ga4_property_id") || "484489968",
-  ga4Channels: null,
-  ga4Devices: null,
-  ga4TopPages: null,
+  store: Object.fromEntries(
+    SITES.map((s) => [
+      s.id,
+      {
+        source: "mock",
+        loaded: false,
+        dataByDate: {},
+        channels: {},
+        devices: {},
+        topPages: [],
+        error: null
+      }
+    ])
+  ),
   charts: { trend: null, channel: null, device: null }
 };
 
@@ -58,20 +83,28 @@ function setStatus(msg, isError = false) {
   el.style.color = isError ? "#ff7b72" : "#a8b8d8";
 }
 
-function generateMockData(days = 150) {
+function makeDateSpan(days = 150) {
   const today = new Date();
-  const allDates = [];
-  for (let i = days - 1; i >= 0; i -= 1) allDates.push(formatDate(addDays(today, -i)));
+  const arr = [];
+  for (let i = days - 1; i >= 0; i -= 1) {
+    arr.push(formatDate(addDays(today, -i)));
+  }
+  return arr;
+}
 
-  const data = { oydisplay: {} };
-  allDates.forEach((dateStr, dayIdx) => {
-    const seed = hash(`oydisplay-${dateStr}`);
+function generateMockForSite(siteId, days = 150) {
+  const dates = makeDateSpan(days);
+  const siteBias = siteId === "oydisplay" ? 1.0 : 0.25;
+  const siteData = {};
+
+  dates.forEach((dateStr, dayIdx) => {
+    const seed = hash(`${siteId}-${dateStr}`);
     const r1 = seededRandom(seed);
     const r2 = seededRandom(seed + 13);
     const r3 = seededRandom(seed + 29);
     const weekly = 0.82 + Math.sin((dayIdx / 7) * Math.PI * 2) * 0.15;
     const trend = 0.94 + dayIdx / days / 4;
-    const sessions = Math.max(60, Math.round(1200 * weekly * trend * (0.82 + r1 * 0.42)));
+    const sessions = Math.max(30, Math.round(1200 * siteBias * weekly * trend * (0.82 + r1 * 0.42)));
     const users = Math.round(sessions * (0.68 + r2 * 0.14));
     const pageviews = Math.round(sessions * (1.8 + r3 * 0.9));
     const conversions = Math.round(sessions * (0.02 + r1 * 0.03));
@@ -79,95 +112,86 @@ function generateMockData(days = 150) {
     const avgDuration = 80 + Math.round(r3 * 180);
     const revenue = Math.round(conversions * (120 + r1 * 180));
 
-    const channels = {
-      "Organic Search": Math.round(sessions * (0.35 + r1 * 0.08)),
-      Direct: Math.round(sessions * (0.22 + r2 * 0.06)),
-      Referral: Math.round(sessions * (0.14 + r3 * 0.06)),
-      "Organic Social": Math.round(sessions * (0.12 + r1 * 0.04)),
-      "Paid Search": Math.round(sessions * (0.1 + r2 * 0.05))
-    };
-
-    const devices = {
-      desktop: Math.round(sessions * (0.42 + r2 * 0.15)),
-      mobile: Math.round(sessions * (0.5 + r1 * 0.12)),
-      tablet: Math.round(sessions * (0.05 + r3 * 0.04))
-    };
-
-    const topPages = [
-      "/", "/products", "/about-us", "/contact-us", "/blog", "/product-display-rack"
-    ].map((path, idx) => {
-      const w = 0.6 / (idx + 1) + seededRandom(seed + idx + 200) * 0.09;
-      const s = Math.max(8, Math.round(w * sessions * (0.4 + r2 * 0.55)));
-      return { path, sessions: s, conversions: Math.round(s * (0.01 + seededRandom(seed + idx + 300) * 0.05)) };
-    });
-
-    data.oydisplay[dateStr] = {
-      sessions,
-      users,
-      pageviews,
-      conversions,
-      bounceRate,
-      avgDuration,
-      revenue,
-      channels,
-      devices,
-      topPages
-    };
+    siteData[dateStr] = { sessions, users, pageviews, conversions, bounceRate, avgDuration, revenue };
   });
 
-  state.ga4Channels = null;
-  state.ga4Devices = null;
-  state.ga4TopPages = null;
-  return { data, allDates };
+  return {
+    dataByDate: siteData,
+    channels: {
+      "Organic Search": 4500 * siteBias,
+      Direct: 2600 * siteBias,
+      Referral: 1200 * siteBias,
+      "Organic Social": 900 * siteBias,
+      "Paid Search": 700 * siteBias
+    },
+    devices: {
+      desktop: 4700 * siteBias,
+      mobile: 5100 * siteBias,
+      tablet: 300 * siteBias
+    },
+    topPages: [
+      { path: "/", sessions: 2600 * siteBias, conversions: 68 * siteBias },
+      { path: "/products", sessions: 1600 * siteBias, conversions: 43 * siteBias },
+      { path: "/about-us", sessions: 740 * siteBias, conversions: 11 * siteBias }
+    ],
+    source: "mock"
+  };
 }
 
 async function loadGa4Data(propertyId) {
   const endDate = new Date();
   const startDate = addDays(endDate, -149);
-  const url =
-    `/api/ga4/dashboard?propertyId=${encodeURIComponent(propertyId)}&startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
+  const url = `/api/ga4/dashboard?propertyId=${encodeURIComponent(propertyId)}&startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
   const res = await fetch(url);
   const payload = await res.json();
   if (!res.ok) {
-    throw new Error(payload.error || "GA4 请求失败");
+    throw new Error(payload.error || "GA4 request failed");
   }
-
   const rows = payload.perDay || [];
   if (!rows.length) {
-    throw new Error("GA4 返回空数据");
+    throw new Error("GA4 returned empty rows");
   }
 
-  const data = { oydisplay: {} };
+  const dataByDate = {};
   rows.forEach((row) => {
-    data.oydisplay[row.date] = {
-      sessions: row.sessions,
-      users: row.users,
-      pageviews: row.pageviews,
-      conversions: row.conversions,
-      bounceRate: row.bounceRate,
-      avgDuration: row.avgDuration,
-      revenue: row.revenue,
-      channels: {},
-      devices: {},
-      topPages: []
+    dataByDate[row.date] = {
+      sessions: Number(row.sessions) || 0,
+      users: Number(row.users) || 0,
+      pageviews: Number(row.pageviews) || 0,
+      conversions: Number(row.conversions) || 0,
+      bounceRate: Number(row.bounceRate) || 0,
+      avgDuration: Number(row.avgDuration) || 0,
+      revenue: Number(row.revenue) || 0
     };
   });
 
-  state.ga4Channels = payload.channels || {};
-  state.ga4Devices = payload.devices || {};
-  state.ga4TopPages = payload.topPages || [];
-  return { data, allDates: rows.map((r) => r.date) };
+  return {
+    source: "ga4",
+    dataByDate,
+    channels: payload.channels || {},
+    devices: payload.devices || {},
+    topPages: payload.topPages || []
+  };
 }
 
-async function discoverPropertyId() {
+async function discoverProperties() {
   const res = await fetch("/api/ga4/discover");
   const payload = await res.json();
-  if (!res.ok) throw new Error(payload.error || "Property 自动识别失败");
-  const list = payload.properties || [];
-  if (!list.length) throw new Error("未发现可访问的 GA4 Property");
-  const matched =
-    list.find((p) => /oydisplay|ouyee|display/i.test(`${p.propertyName} ${p.account || ""}`)) || list[0];
-  return { picked: matched, all: list };
+  if (!res.ok) {
+    throw new Error(payload.error || "Discover failed");
+  }
+  return payload.properties || [];
+}
+
+function getFocusSite() {
+  return SITES.find((s) => s.id === state.focusSiteId) || SITES[0];
+}
+
+function setFocusSite(siteId) {
+  state.focusSiteId = siteId;
+  localStorage.setItem("focus_site_id", siteId);
+  const site = getFocusSite();
+  document.getElementById("propertyIdInput").value = site.propertyId;
 }
 
 function setupDateRange() {
@@ -182,14 +206,28 @@ function renderSiteList() {
   container.innerHTML = "";
   SITES.forEach((site) => {
     const div = document.createElement("div");
-    div.className = `site-item ${state.selectedSites.has(site.id) ? "active" : ""}`;
+    const isSelected = state.selectedSites.has(site.id);
+    const isFocus = state.focusSiteId === site.id;
+    div.className = `site-item ${isSelected ? "active" : ""} ${isFocus ? "focused" : ""}`;
     div.innerHTML = `
       <div>
         <strong>${site.name}</strong>
         <div class="site-domain">${site.domain}</div>
+        <div class="site-domain">GA4 Property: ${site.propertyId}</div>
       </div>
       <span class="site-dot" style="background:${site.color};"></span>
     `;
+
+    div.addEventListener("click", () => {
+      if (state.selectedSites.has(site.id) && state.selectedSites.size > 1) {
+        state.selectedSites.delete(site.id);
+      } else {
+        state.selectedSites.add(site.id);
+      }
+      setFocusSite(site.id);
+      renderSiteList();
+      renderDashboard();
+    });
     container.appendChild(div);
   });
 }
@@ -219,9 +257,10 @@ function aggregateMetrics(siteIds, dates) {
   };
 
   siteIds.forEach((siteId) => {
+    const item = state.store[siteId];
     total.trendBySite[siteId] = [];
     dates.forEach((date) => {
-      const day = state.data[siteId][date];
+      const day = item.dataByDate[date];
       if (!day) {
         total.trendBySite[siteId].push(0);
         return;
@@ -233,19 +272,22 @@ function aggregateMetrics(siteIds, dates) {
       total.revenue += day.revenue;
       total.avgDurationWeighted += day.avgDuration * day.sessions;
       total.bounceWeighted += day.bounceRate * day.sessions;
-      CHANNEL_KEYS.forEach((key) => {
-        total.channels[key] += day.channels?.[key] || 0;
-      });
-      DEVICE_KEYS.forEach((key) => {
-        total.devices[key] += day.devices?.[key] || 0;
-      });
-      (day.topPages || []).forEach((page) => {
-        const pageKey = `${siteId}__${page.path}`;
-        if (!total.topPages[pageKey]) total.topPages[pageKey] = { siteId, path: page.path, sessions: 0, conversions: 0 };
-        total.topPages[pageKey].sessions += page.sessions;
-        total.topPages[pageKey].conversions += page.conversions;
-      });
       total.trendBySite[siteId].push(day.sessions);
+    });
+
+    CHANNEL_KEYS.forEach((k) => {
+      total.channels[k] += Number(item.channels[k] || 0);
+    });
+    DEVICE_KEYS.forEach((k) => {
+      total.devices[k] += Number(item.devices[k] || 0);
+    });
+    (item.topPages || []).forEach((p) => {
+      const pageKey = `${siteId}__${p.path}`;
+      if (!total.topPages[pageKey]) {
+        total.topPages[pageKey] = { siteId, path: p.path, sessions: 0, conversions: 0 };
+      }
+      total.topPages[pageKey].sessions += Number(p.sessions || 0);
+      total.topPages[pageKey].conversions += Number(p.conversions || 0);
     });
   });
 
@@ -257,7 +299,7 @@ function aggregateMetrics(siteIds, dates) {
 }
 
 function pickPreviousDates(currentDates) {
-  if (currentDates.length === 0) return [];
+  if (!currentDates.length) return [];
   const start = parseDate(currentDates[0]);
   const end = parseDate(currentDates[currentDates.length - 1]);
   const len = diffDays(start, end);
@@ -284,12 +326,12 @@ function formatDuration(sec) {
 }
 
 function formatDelta(current, previous, inverse = false) {
-  if (!previous) return { text: "无对比基线", cls: "" };
+  if (!previous) return { text: "No baseline", cls: "" };
   const raw = ((current - previous) / previous) * 100;
   const adjusted = inverse ? -raw : raw;
   const cls = adjusted >= 0 ? "up" : "down";
   const prefix = adjusted >= 0 ? "+" : "";
-  return { text: `${prefix}${adjusted.toFixed(1)}% vs 上期`, cls };
+  return { text: `${prefix}${adjusted.toFixed(1)}% vs previous`, cls };
 }
 
 function renderKpis(current, previous) {
@@ -329,7 +371,7 @@ function renderTrendChart(dates, current, selectedIds) {
   const datasets = selectedIds.map((siteId) => {
     const site = SITES.find((s) => s.id === siteId);
     return {
-      label: site.name,
+      label: `${site.name} (${site.domain})`,
       data: current.trendBySite[siteId],
       borderColor: site.color,
       backgroundColor: `${site.color}55`,
@@ -356,12 +398,17 @@ function renderTrendChart(dates, current, selectedIds) {
 }
 
 function renderChannelChart(current) {
-  const sourceData = state.source === "ga4" && state.ga4Channels ? state.ga4Channels : current.channels;
   upsertChart("channel", {
     type: "bar",
     data: {
       labels: CHANNEL_KEYS,
-      datasets: [{ label: "Sessions", data: CHANNEL_KEYS.map((k) => sourceData[k] || 0), backgroundColor: ["#00d4ff", "#1dff9b", "#ffd166", "#ff7b72", "#7aa2ff"] }]
+      datasets: [
+        {
+          label: "Sessions",
+          data: CHANNEL_KEYS.map((k) => current.channels[k] || 0),
+          backgroundColor: ["#00d4ff", "#1dff9b", "#ffd166", "#ff7b72", "#7aa2ff"]
+        }
+      ]
     },
     options: {
       responsive: true,
@@ -376,49 +423,63 @@ function renderChannelChart(current) {
 }
 
 function renderDeviceChart(current) {
-  const sourceData = state.source === "ga4" && state.ga4Devices ? state.ga4Devices : current.devices;
   upsertChart("device", {
     type: "doughnut",
     data: {
       labels: DEVICE_KEYS.map((d) => d[0].toUpperCase() + d.slice(1)),
-      datasets: [{ data: DEVICE_KEYS.map((k) => sourceData[k] || 0), backgroundColor: ["#00d4ff", "#1dff9b", "#ffd166"], borderWidth: 0 }]
+      datasets: [
+        {
+          data: DEVICE_KEYS.map((k) => current.devices[k] || 0),
+          backgroundColor: ["#00d4ff", "#1dff9b", "#ffd166"],
+          borderWidth: 0
+        }
+      ]
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#dce7ff" } } } }
   });
 }
 
 function renderTopPages(current) {
-  const top = state.source === "ga4" && state.ga4TopPages ? state.ga4TopPages : current.topPages;
   const tbody = document.getElementById("topPageTable");
-  tbody.innerHTML = top
+  tbody.innerHTML = current.topPages
     .map((item) => {
-      const site = SITES[0];
-      return `<tr><td>${site.name}</td><td>${item.path}</td><td>${formatNum(item.sessions)}</td><td>${formatNum(item.conversions)}</td></tr>`;
+      const site = SITES.find((s) => s.id === item.siteId);
+      return `<tr><td>${site.domain}</td><td>${item.path}</td><td>${formatNum(item.sessions)}</td><td>${formatNum(item.conversions)}</td></tr>`;
     })
     .join("");
 }
 
-function renderAlerts(dates) {
+function renderAlerts(dates, selectedIds) {
   const alerts = [];
-  const site = SITES[0];
   const latestDate = dates[dates.length - 1];
   const prevDate = dates[dates.length - 2];
-  const latest = state.data.oydisplay?.[latestDate];
-  const prev = state.data.oydisplay?.[prevDate];
 
-  if (latest?.bounceRate > 0.66) alerts.push(`${site.name} 跳出率偏高 (${formatPercent(latest.bounceRate, 1)})`);
-  if (latest && prev && prev.sessions > 0) {
-    const drop = ((latest.sessions - prev.sessions) / prev.sessions) * 100;
-    if (drop <= -18) alerts.push(`${site.name} 单日流量下降 ${drop.toFixed(1)}%，建议排查投放/SEO`);
+  selectedIds.forEach((siteId) => {
+    const site = SITES.find((s) => s.id === siteId);
+    const item = state.store[siteId];
+    const latest = item.dataByDate[latestDate];
+    const prev = item.dataByDate[prevDate];
+
+    if (latest?.bounceRate > 0.66) {
+      alerts.push(`${site.domain} high bounce: ${formatPercent(latest.bounceRate, 1)}`);
+    }
+    if (latest && prev && prev.sessions > 0) {
+      const drop = ((latest.sessions - prev.sessions) / prev.sessions) * 100;
+      if (drop <= -18) {
+        alerts.push(`${site.domain} sessions dropped ${drop.toFixed(1)}% day-over-day`);
+      }
+    }
+  });
+
+  if (!alerts.length) {
+    alerts.push("No high-risk alert in current range.");
   }
-  if (!alerts.length) alerts.push("当前无高风险预警，关键指标在可控范围。");
-
   document.getElementById("alertList").innerHTML = alerts.map((a) => `<li>${a}</li>`).join("");
 }
 
 function renderHeader(selectedIds, dates) {
-  document.getElementById("selectedSummary").textContent = `${selectedIds.length} 个站点`;
-  document.getElementById("rangeSummary").textContent = `${dates[0] || "-"} 至 ${dates[dates.length - 1] || "-"}`;
+  document.getElementById("selectedSummary").textContent = `${selectedIds.length} sites`;
+  document.getElementById("rangeSummary").textContent = `${dates[0] || "-"} to ${dates[dates.length - 1] || "-"}`;
 }
 
 function renderDashboard() {
@@ -434,12 +495,53 @@ function renderDashboard() {
   renderChannelChart(current);
   renderDeviceChart(current);
   renderTopPages(current);
-  renderAlerts(dates);
+  renderAlerts(dates, selectedIds);
+}
+
+async function connectSite(site) {
+  try {
+    const loaded = await loadGa4Data(site.propertyId);
+    state.store[site.id] = { ...state.store[site.id], ...loaded, loaded: true, error: null };
+    return { ok: true, siteId: site.id };
+  } catch (err) {
+    const fallback = generateMockForSite(site.id, 150);
+    state.store[site.id] = { ...state.store[site.id], ...fallback, loaded: true, error: err.message };
+    return { ok: false, siteId: site.id, error: err.message };
+  }
+}
+
+async function connectSelectedSites() {
+  setStatus("Connecting fixed GA4 properties...");
+  const sitesToConnect = SITES.filter((s) => state.selectedSites.has(s.id));
+  const results = await Promise.all(sitesToConnect.map((s) => connectSite(s)));
+  const fails = results.filter((r) => !r.ok);
+  if (fails.length) {
+    setStatus(`Connected ${results.length - fails.length}/${results.length}. Fallback mock used for failed sites.`, true);
+  } else {
+    setStatus(`Connected ${results.length} sites with fixed GA4 IDs.`);
+  }
+}
+
+async function checkFixedMapping() {
+  setStatus("Checking GA4 discover list...");
+  try {
+    const discovered = await discoverProperties();
+    const ids = new Set(discovered.map((p) => String(p.propertyId)));
+    const missing = SITES.filter((s) => !ids.has(s.propertyId));
+    if (!missing.length) {
+      setStatus("Mapping check passed: both fixed property IDs are visible.");
+    } else {
+      setStatus(`Mapping warning: missing in discover -> ${missing.map((m) => m.propertyId).join(", ")}`, true);
+    }
+  } catch (err) {
+    setStatus(`Discover failed: ${err.message}`, true);
+  }
 }
 
 function setupEvents() {
   document.getElementById("startDate").addEventListener("change", renderDashboard);
   document.getElementById("endDate").addEventListener("change", renderDashboard);
+
   document.querySelectorAll(".quick-range button[data-days]").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".quick-range button[data-days]").forEach((b) => b.classList.remove("active"));
@@ -454,74 +556,42 @@ function setupEvents() {
   });
 
   document.getElementById("connectGa4Btn").addEventListener("click", async () => {
-    const propertyId = document.getElementById("propertyIdInput").value.trim();
-    if (!/^\d+$/.test(propertyId)) {
-      setStatus("Property ID 格式不正确（应为纯数字）", true);
-      return;
-    }
-    await connectGa4(propertyId);
+    await connectSelectedSites();
+    renderDashboard();
   });
 
   document.getElementById("refreshGa4Btn").addEventListener("click", async () => {
-    if (!state.propertyId) {
-      setStatus("请先输入并连接 Property ID", true);
-      return;
-    }
-    await connectGa4(state.propertyId);
+    await connectSelectedSites();
+    renderDashboard();
   });
 
   document.getElementById("discoverGa4Btn").addEventListener("click", async () => {
-    setStatus("正在自动识别 Property...");
-    try {
-      const { picked, all } = await discoverPropertyId();
-      document.getElementById("propertyIdInput").value = picked.propertyId;
-      setStatus(`已识别到 ${all.length} 个 Property，已选：${picked.propertyName} (${picked.propertyId})`);
-    } catch (err) {
-      setStatus(`自动识别失败：${err.message}`, true);
-    }
+    await checkFixedMapping();
   });
-}
 
-async function connectGa4(propertyId) {
-  setStatus("GA4 连接中...");
-  try {
-    const loaded = await loadGa4Data(propertyId);
-    state.data = loaded.data;
-    state.allDates = loaded.allDates;
-    state.source = "ga4";
-    state.propertyId = propertyId;
-    localStorage.setItem("ga4_property_id", propertyId);
-    setupDateRange();
-    renderDashboard();
-    setStatus(`GA4 已连接：Property ${propertyId}（真实数据）`);
-  } catch (err) {
-    setStatus(`GA4 连接失败：${err.message}，已回退模拟数据`, true);
-    const mock = generateMockData(150);
-    state.data = mock.data;
-    state.allDates = mock.allDates;
-    state.source = "mock";
-    setupDateRange();
-    renderDashboard();
-  }
+  const propertyInput = document.getElementById("propertyIdInput");
+  propertyInput.readOnly = true;
+  propertyInput.title = "Fixed mapping mode. Property ID is bound to selected site.";
 }
 
 async function init() {
-  document.getElementById("propertyIdInput").value = state.propertyId;
+  state.allDates = makeDateSpan(150);
+  setupDateRange();
+  setFocusSite(state.focusSiteId);
   renderSiteList();
   setupEvents();
 
-  if (state.propertyId) {
-    await connectGa4(state.propertyId);
-    return;
-  }
-
-  const mock = generateMockData(150);
-  state.data = mock.data;
-  state.allDates = mock.allDates;
-  state.source = "mock";
-  setupDateRange();
+  // Default fallback data first to keep UI responsive.
+  SITES.forEach((site) => {
+    const fallback = generateMockForSite(site.id, 150);
+    state.store[site.id] = { ...state.store[site.id], ...fallback, loaded: true };
+  });
   renderDashboard();
-  setStatus("未配置 Property ID，当前为模拟数据");
+
+  // Then replace with real GA4 for selected sites.
+  await connectSelectedSites();
+  renderSiteList();
+  renderDashboard();
 }
 
 init();

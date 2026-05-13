@@ -125,6 +125,10 @@ h1 {
   background: rgba(0, 212, 255, 0.1);
 }
 
+.site-item.focused {
+  box-shadow: inset 0 0 0 1px rgba(29, 255, 155, 0.6);
+}
+
 .site-dot {
   width: 10px;
   height: 10px;
