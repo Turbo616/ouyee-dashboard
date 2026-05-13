@@ -44,8 +44,20 @@ function newBucket(domain) {
   };
 }
 
+function canonicalKey(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "(Unknown)";
+  if (/^[A-Za-z][A-Za-z\s\-()]*$/.test(raw)) {
+    return raw
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .replace(/\b[a-z]/g, (m) => m.toUpperCase());
+  }
+  return raw;
+}
+
 function addCount(map, key, n = 1) {
-  const k = key && String(key).trim() ? String(key).trim() : "(Unknown)";
+  const k = canonicalKey(key);
   map[k] = (map[k] || 0) + n;
 }
 
