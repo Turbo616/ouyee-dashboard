@@ -9,15 +9,47 @@ const TAB_RULES = [
   { siteId: "focusstoredisplay", domain: "focusstoredisplay.com", mode: "exact", key: "观筑" }
 ];
 
-// A channel, B date, C name, D email, E phone, F country, G store type, H message, I owner, J source URL
-const IDX_DATE = 1;
-const IDX_COUNTRY = 5;
-const IDX_STORE = 6;
-const IDX_OWNER = 8;
-const IDX_SOURCE_URL = 9;
+// Legacy fallback indexes for A:J (some tabs have shifted columns)
+const LEGACY_IDX_DATE = 1;
+const LEGACY_IDX_COUNTRY = 5;
+const LEGACY_IDX_STORE = 6;
+const LEGACY_IDX_OWNER = 8;
+const LEGACY_IDX_SOURCE_URL = 9;
 
 function normalize(s) {
   return String(s || "").trim().toLowerCase();
+}
+
+function normalizeHeader(s) {
+  return normalize(s).replace(/\s+/g, "").replace(/[：:]/g, "");
+}
+
+function findHeaderIndex(headerRow, aliases) {
+  const normalizedAliases = aliases.map((x) => normalizeHeader(x));
+  const normalizedCells = (headerRow || []).map((x) => normalizeHeader(x));
+
+  for (let i = 0; i < normalizedCells.length; i += 1) {
+    const cell = normalizedCells[i];
+    if (!cell) continue;
+    if (normalizedAliases.some((a) => cell === a || cell.includes(a))) return i;
+  }
+  return -1;
+}
+
+function detectColumns(headerRow) {
+  return {
+    date: findHeaderIndex(headerRow, ["日期", "date"]),
+    country: findHeaderIndex(headerRow, ["国家", "country"]),
+    store: findHeaderIndex(headerRow, ["店铺", "店铺类型", "店铺类目", "类目", "品类", "store", "storetype", "category", "shoptype"]),
+    owner: findHeaderIndex(headerRow, ["跟进人", "跟进", "跟进人员", "业务员", "owner", "sales", "followup", "followupowner"]),
+    sourceUrl: findHeaderIndex(headerRow, ["询盘来源url", "来源url", "sourceurl", "source", "url", "website"])
+  };
+}
+
+function getCell(row, idx, fallbackIdx = -1) {
+  if (idx >= 0 && idx < row.length) return row[idx];
+  if (fallbackIdx >= 0 && fallbackIdx < row.length) return row[fallbackIdx];
+  return "";
 }
 
 function parseDateToIso(input) {
@@ -150,10 +182,12 @@ export const onRequestGet = async (context) => {
       const minDate = tabMinDate[tabTitle] || null;
       const rows = vr.values || [];
       if (rows.length <= 1) continue;
+      const header = rows[0] || [];
+      const cols = detectColumns(header);
 
       for (let i = 1; i < rows.length && i <= maxRows; i += 1) {
         const row = rows[i];
-        const date = parseDateToIso(row[IDX_DATE]);
+        const date = parseDateToIso(getCell(row, cols.date, LEGACY_IDX_DATE));
         if (!date) {
           skippedRows += 1;
           continue;
@@ -163,15 +197,18 @@ export const onRequestGet = async (context) => {
           continue;
         }
 
-        const inferred = inferSiteByUrl(row[IDX_SOURCE_URL] || "");
+        const inferred = inferSiteByUrl(getCell(row, cols.sourceUrl, LEGACY_IDX_SOURCE_URL) || "");
         const site = inferred || fallbackSite;
         if (!site || !perSite[site.siteId]) {
           skippedRows += 1;
           continue;
         }
 
-        applyRow(perSite[site.siteId], date, row[IDX_COUNTRY] || "", row[IDX_STORE] || "", row[IDX_OWNER] || "");
-        applyRow(all, date, row[IDX_COUNTRY] || "", row[IDX_STORE] || "", row[IDX_OWNER] || "");
+        const country = getCell(row, cols.country, LEGACY_IDX_COUNTRY);
+        const storeType = getCell(row, cols.store, LEGACY_IDX_STORE);
+        const owner = getCell(row, cols.owner, LEGACY_IDX_OWNER);
+        applyRow(perSite[site.siteId], date, country, storeType, owner);
+        applyRow(all, date, country, storeType, owner);
         parsedRows += 1;
       }
     }
