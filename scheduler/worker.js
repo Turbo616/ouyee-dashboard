@@ -1,0 +1,5 @@
+export async function run(env,trigger='scheduled'){const response=await fetch(env.DASHBOARD_URL+'/api/scheduled-refresh',{method:'POST',headers:{Authorization:'Bearer '+env.SCHEDULER_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({trigger}),signal:AbortSignal.timeout(180000)});const result=await response.json();if(!response.ok||!result.ok)throw new Error(result.error||`Dashboard refresh HTTP ${response.status}`);console.log('Dashboard daily refresh:',result.status,JSON.stringify(result.coverage));return result}
+export default{
+ async scheduled(controller,env,ctx){ctx.waitUntil(run(env))},
+ async fetch(request,env){if(request.method!=='POST'||new URL(request.url).pathname!=='/run')return new Response('Not found',{status:404});const expected='Bearer '+env.SCHEDULER_TOKEN;if(!env.SCHEDULER_TOKEN||request.headers.get('Authorization')!==expected)return new Response('Unauthorized',{status:401});try{return Response.json(await run(env,'schedule-test'))}catch(e){return Response.json({error:e.message},{status:502})}}
+};

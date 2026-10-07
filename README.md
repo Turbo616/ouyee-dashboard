@@ -22,7 +22,7 @@ npx wrangler pages dev dist --port 8787
 
 环境变量：`DASHBOARD_PASSWORD`、`SESSION_SECRET`、`GOOGLE_SERVICE_ACCOUNT`（完整服务账号 JSON）、`GOOGLE_ADS_DEVELOPER_TOKEN`。KV 绑定：`DASHBOARD_DATA`。
 
-GSC、GA4、Google Ads 由已登录用户点击“刷新数据”重新读取。询盘表在打开看板时自动检查，并在页面可见期间每 5 分钟检查；也支持单独点击“同步询盘”立即强制同步。表格新增、修改、删除后按全量内容重新汇总，不重复追加。读取失败保留上次成功快照并显示错误。关闭看板后没有定时后台任务。
+GSC、GA4、Google Ads 由已登录用户点击“刷新数据”重新读取。询盘表在打开看板时自动检查，并在页面可见期间每 5 分钟检查；也支持单独点击“同步询盘”立即强制同步。表格新增、修改、删除后按全量内容重新汇总，不重复追加。读取失败保留上次成功快照并显示错误。另有 Cloudflare 后台定时任务，在北京时间每天上午 08:00 更新所有已授权来源，关闭看板或本机后仍执行。
 
 询盘 CSV 表头：询盘编号、登记日期、网站域名、来源渠道、询盘状态、国家、公司、联系人、备注。前五列必填；日期 YYYY-MM-DD；状态 有效/待确认/垃圾。当前广告登记询盘成本采用明确标注 Google Ads / SEM 的登记数作为分母，不等同于有效客户成本或广告归因证明。
 
@@ -39,3 +39,13 @@ GSC、GA4、Google Ads 由已登录用户点击“刷新数据”重新读取。
 客户端可查看与总览同周期、截至今天最近 28 天、全部历史登记，支持来源/状态/客户搜索和分页。广告登记成本只在登记日期有完整广告报表覆盖且单一货币时计算；这不是有效客户成本或归因证明。
 
 验证：`node tests/leads.mjs`、`node tests/sheet-leads.mjs`、`npm run build`。
+
+## 每日后台更新
+
+独立 Cloudflare Worker `ouyee-dashboard-scheduler` 每天 UTC00:00（北京时间08:00）触发受保护的 `/api/scheduled-refresh`，复用手动刷新逻辑，包括 GSC、Google Ads、已授权的 GA4 和询盘表。`SCHEDULER_TOKEN` 分别保存在 Pages 与触发 Worker 的加密环境中，源码不保存它。
+
+每日更新记录保存最近执行时间、结果、来源覆盖与错误信息，数据连接页面可查看。GA4 未授权网站仍标记待授权。测试触发标记为 schedule-test，区别于正式定时执行。后台失败会记录失败；询盘读取失败保留上次成功记录。
+
+定时 Worker 部署：`npx wrangler deploy --config scheduler/wrangler.json`。业务数据接口仍通过 GitHub main 推送到 Cloudflare Pages 自动部署；日常数据更新无需推送代码。
+
+验证：`node tests/scheduler.mjs`。

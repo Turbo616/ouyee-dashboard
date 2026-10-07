@@ -1,0 +1,1 @@
+{"name":"ouyee-dashboard-scheduler","main":"worker.js","compatibility_date":"2026-10-07","vars":{"DASHBOARD_URL":"https://ouyee-dashboard.pages.dev"},"triggers":{"crons":["0 0 * * *"]},"observability":{"enabled":true}}
