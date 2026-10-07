@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {parseCsv,validateLeads} from '../cloud/leads.js';
+const header='询盘编号,登记日期,网站域名,来源渠道,询盘状态,国家,公司,联系人,备注';
+const csv=header+'\nT-1,2026-09-15,https://www.oydisplay.com/,Google Ads,有效,US,"Example, Inc.",Test,"line 1\nline 2"\nT-1,2026-09-15,oydisplay.com,Google Ads,有效,US,Example,Test,duplicate';
+const p=validateLeads(csv,[{domain:'oydisplay.com'}],{rows:[]});
+assert.equal(p.rows.length,1);assert.equal(p.duplicateCount,1);assert.equal(p.errors.length,0);
+assert.equal(p.rows[0].company,'Example, Inc.');assert.equal(p.rows[0].notes,'line 1\nline 2');
+assert.equal(validateLeads(header+'\nX,2026-02-30,unknown.com,未知,有效,,,,',[{domain:'oydisplay.com'}],{rows:[]}).errors.length,2);
+assert.throws(()=>parseCsv('"broken'));assert.equal(validateLeads(csv,[{domain:'oydisplay.com'}],{rows:p.rows}).newCount,0);
+console.log('CSV validation and deduplication passed');

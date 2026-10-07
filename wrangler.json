@@ -1,0 +1,11 @@
+{
+  "name": "ouyee-dashboard",
+  "compatibility_date": "2026-10-07",
+  "pages_build_output_dir": "dist",
+  "kv_namespaces": [
+    {
+      "binding": "DASHBOARD_DATA",
+      "id": "97be304779c145598295450d1cf86327"
+    }
+  ]
+}

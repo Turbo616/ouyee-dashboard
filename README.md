@@ -1,118 +1,31 @@
-﻿# OYDisplay GA4 Dashboard (Cloudflare Pages)
+# Ouyee-Dashboard
 
-This project is ready for Cloudflare Pages deployment.
+中文多网站运营看板。采用 TailAdmin 免费版的设计基础、配色和组件样式，遵守 MIT 许可。
 
-## Project Structure
+- 网站清单：Google Sheets，只读取名称与网址。
+- GSC：每日自然搜索点击、展示、点击率、平均排名及默认周期页面明细。
+- Google Ads：广告系列、每日花费、点击、展示和转化动作，按目标网址匹配网站。
+- GA4：只统计已获得权限并与网站网址匹配的资源；权限不足明确标记。
+- 真实询盘：CSV 预览、校验、按询盘编号去重、确认导入、有效状态统计。没有登记数据时显示待接入。
+- 数据周期：以北京时间计算，默认截至三天前的最近 28 天，保存前 28 天供比较。广告原始日期按各广告账户时区统计；不同账户时区在连接页列明，跨时区不得视为严格同时段。
+- 登录保护：服务器签名的 HttpOnly Cookie，谷歌密钥存于 Cloudflare 加密环境变量，数据存储于独立 KV，不进入浏览器构建包。
 
-- Frontend: `index.html`, `app.js`, `styles.css`
-- Cloudflare Pages Functions:
-  - `functions/api/health.js`
-  - `functions/api/ga4/discover.js`
-  - `functions/api/ga4/dashboard.js`
-  - `functions/api/ga4/enable-services.js` (optional helper)
-  - `functions/api/leads/sheet.js` (Google Sheet leads source)
-- `functions/api/gsc/summary.js` (Search Console keywords/pages)
+## 开发
 
-## Deploy to Cloudflare Pages
-
-1. Push this folder to a GitHub repository.
-2. In Cloudflare Dashboard:
-   - Go to `Workers & Pages`
-   - Create a new `Pages` project
-   - Connect your GitHub repository
-3. Build settings:
-   - Framework preset: `None`
-   - Build command: empty
-   - Build output directory: `.`
-4. Deploy.
-
-## Required Environment Variables (Secrets)
-
-In `Pages Project -> Settings -> Environment variables`, add:
-
-- `GA4_CLIENT_EMAIL`
-  - Example: `codex-581@quick-flame-492901-s4.iam.gserviceaccount.com`
-- `GA4_PRIVATE_KEY`
-  - Use the exact `private_key` value from your service account JSON
-  - Keep multiline format with:
-    - `-----BEGIN PRIVATE KEY-----`
-    - `-----END PRIVATE KEY-----`
-- `GA4_PROJECT_ID` (optional, used by `enable-services`)
-  - Example: `quick-flame-492901-s4`
-
-Set these for both `Production` and `Preview` environments.
-
-Additional optional vars for leads from Google Sheets:
-
-- `LEADS_SPREADSHEET_ID`
-  - The spreadsheet ID from Google Sheets URL
-- `LEADS_RANGE`
-  - Example: `欧野2!A:Z` or `Sheet1!A:Z`
-
-To use private sheets, share the sheet with:
-- `codex-581@quick-flame-492901-s4.iam.gserviceaccount.com`
-
-For GSC API data, add the same service account as user/owner to each Search Console property:
-- `sc-domain:oydisplay.com` or `https://oydisplay.com/`
-- `sc-domain:ouyedisplay.com` or `https://ouyedisplay.com/`
-- `sc-domain:focusstoredisplay.com` or `https://focusstoredisplay.com/`
-
-Notes:
-- The UI supports language switch (`中文` / `EN`).
-- In leads aggregation, rows from tabs `欧野1` and `欧野-whatsapp` before `2025-01-01` are excluded.
-
-### Fast copy from local JSON
-
-If your service account file exists at `.\secrets\ga4-service-account.json`, run:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\prepare-cloudflare-secrets.ps1
+```bash
+npm ci
+npm run build
+npx wrangler pages dev dist --port 8787
 ```
 
-This prints ready-to-copy values for:
-- `GA4_CLIENT_EMAIL`
-- `GA4_PROJECT_ID`
-- `GA4_PRIVATE_KEY`
+本地 `.dev.vars` 配置与 Cloudflare 环境变量同名。正式部署：Cloudflare Pages 连接本仓库 main，构建命令 `npm run build`，输出 `dist`。Cloudflare 自动部署每次 main 更新。
 
-Optional local dev vars file:
+环境变量：`DASHBOARD_PASSWORD`、`SESSION_SECRET`、`GOOGLE_SERVICE_ACCOUNT`（完整服务账号 JSON）、`GOOGLE_ADS_DEVELOPER_TOKEN`。KV 绑定：`DASHBOARD_DATA`。
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\prepare-cloudflare-secrets.ps1 -WriteDotEnv
-```
+刷新数据由已登录用户点击“刷新数据”触发，当前没有设置定时同步。账号权限变化后需重新刷新。失败时保留旧快照并显示错误。
 
-It creates `.dev.vars` for local Pages Functions debugging.
+询盘 CSV 表头：询盘编号、登记日期、网站域名、来源渠道、询盘状态、国家、公司、联系人、备注。前五列必填；日期 YYYY-MM-DD；状态 有效/待确认/垃圾。Google Ads 有效询盘成本采用登记渠道为 Google Ads 的有效记录作为分母，不等同于广告归因证明。
 
-## Verify After Deploy
+已有编号跳过，修改记录需在后续编辑流程中处理，不会静默覆盖。CSV 导出会防止公式被执行。个人用量下 KV 版本校验减少重复导入；如多人同时导入，应迁移为事务数据库。
 
-1. Open `/api/health`
-   - Should return `ok: true` and show `hasClientEmail` / `hasPrivateKey` as `true`
-2. Open the dashboard page
-3. Click `Auto Detect Property`
-4. Click `Connect GA4`
-
-## Default GA4 Property
-
-The frontend currently defaults to:
-
-- `484489968` (`www.Oydisplay.com - GA4`)
-
-You can still type another property ID in the UI.
-
-## Local Debug (Optional)
-
-You can still run the old local Node API (`server.js`) for debugging:
-
-```powershell
-cd C:\Users\Administrator\Documents\Codex\2026-05-13\new-chat
-node server.js
-```
-
-Then open `http://localhost:8787`.
-
-## Predeploy Check (Optional)
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\predeploy-check.ps1
-```
-
-It validates required files and checks that `secrets/` is not tracked by git.
+模板出处：https://github.com/TailAdmin/free-react-tailwind-admin-dashboard
