@@ -14,7 +14,7 @@ function login(error='',status=200){return new Response(`<!doctype html><html la
 async function body(request){const length=Number(request.headers.get('Content-Length')||0);if(length>2_100_000)throw new Error('文件过大，请控制在 2MB 以内');const text=await request.text();if(enc.encode(text).length>2_100_000)throw new Error('文件过大，请控制在 2MB 以内');return JSON.parse(text||'{}')}
 async function leadStore(env,sites,force=false){const manual=await env.DASHBOARD_DATA.get('leads',{type:'json'})||{connected:false,rows:[]};if(!sites)return manual;const sheet=await syncLeadsSheet(env,sites,force);const ids=new Set(sheet.rows.map(r=>r.id));const rows=[...sheet.rows,...manual.rows.filter(r=>!ids.has(r.id))].sort((a,b)=>b.date.localeCompare(a.date));return{...sheet,connected:sheet.connected||manual.connected,rows,updatedAt:[sheet.updatedAt||'',manual.updatedAt||''].sort().at(-1),qualificationAvailable:sheet.qualificationAvailable||manual.rows.some(r=>r.status&&r.status!=='未标注')}}
 export async function handle(context){const {request,env}=context;const url=new URL(request.url),path=url.pathname;
-if(['/site-logos/ouyedisplay.com-brand.png','/site-logos/ouyedisplay.com-icon.png'].includes(path))return context.next();
+if(['/site-logos/ouyedisplay.com-brand.png','/site-logos/ouyedisplay.com-icon.png','/site-logos/oydisplay.com-icon.svg'].includes(path))return context.next();
 if(path==='/health')return json({ok:true,app:'Ouyee-Dashboard',version:'1.0.0'});
 if(!env.DASHBOARD_PASSWORD||!env.SESSION_SECRET||!env.DASHBOARD_DATA)return new Response('看板正在配置，请稍后访问。',{status:503,headers:{'Cache-Control':'no-store'}});
 if(request.method==='POST'){const origin=request.headers.get('Origin');if(origin&&origin!==url.origin)return json({error:'请求来源不匹配'},403)}
