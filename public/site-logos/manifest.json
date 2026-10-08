@@ -1,0 +1,189 @@
+{
+  "ouyedisplay.com": {
+    "domain": "ouyedisplay.com",
+    "icon": "/site-logos/ouyedisplay.com-icon.png",
+    "brand": "/site-logos/ouyedisplay.com-brand.png",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/ouyedisplay.com-icon.png",
+        "source": "https://ouyedisplay.com/wp-content/uploads/2024/09/cropped-logo-mini-1-1-32x32.png"
+      },
+      {
+        "kind": "brand",
+        "path": "/site-logos/ouyedisplay.com-brand.png",
+        "source": "https://ouyedisplay.com/wp-content/uploads/2024/10/ouyee-logo-174x64.png"
+      }
+    ]
+  },
+  "oydisplay.com": {
+    "domain": "oydisplay.com",
+    "icon": "/site-logos/oydisplay.com-icon.svg",
+    "brand": "/site-logos/oydisplay.com-icon.svg",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/oydisplay.com-icon.svg",
+        "source": "https://oydisplay.com/wp-content/uploads/2025/03/ouyee-favicon.svg"
+      }
+    ]
+  },
+  "ouyeedesign.com": {
+    "domain": "ouyeedesign.com",
+    "icon": "/site-logos/ouyeedesign.com-icon.ico",
+    "brand": "/site-logos/ouyeedesign.com-icon.ico",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/ouyeedesign.com-icon.ico",
+        "source": "https://ouyeedesign.com/favicon.ico"
+      }
+    ]
+  },
+  "ouyeestoredisplay.com": {
+    "domain": "ouyeestoredisplay.com",
+    "icon": "/site-logos/ouyeestoredisplay.com-icon.ico",
+    "brand": "/site-logos/ouyeestoredisplay.com-icon.ico",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/ouyeestoredisplay.com-icon.ico",
+        "source": "https://img.yfisher.com/m0/1768526249669-3.ico"
+      }
+    ]
+  },
+  "ouyeefixtures.com": {
+    "domain": "ouyeefixtures.com",
+    "icon": "/site-logos/ouyeefixtures.com-icon.ico",
+    "brand": "/site-logos/ouyeefixtures.com-icon.ico",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/ouyeefixtures.com-icon.ico",
+        "source": "https://www.ouyeefixtures.com/cdn/shop/16552/ico/1727517052415_0.ico"
+      }
+    ]
+  },
+  "ouyeedispensary.com": {
+    "domain": "ouyeedispensary.com",
+    "icon": "/site-logos/ouyeedispensary.com-icon.png",
+    "brand": "/site-logos/ouyeedispensary.com-icon.png",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/ouyeedispensary.com-icon.png",
+        "source": "https://static.gooecloud.com/upload/img/GY898963570754/ouyee-dispensary-displays-ico.png"
+      }
+    ]
+  },
+  "focusstoredisplay.com": {
+    "domain": "focusstoredisplay.com",
+    "icon": "/site-logos/focusstoredisplay.com-icon.png",
+    "brand": "/site-logos/focusstoredisplay.com-icon.png",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/focusstoredisplay.com-icon.png",
+        "source": "https://ueeshop.ly200-cdn.com/u_file/UPBB/UPBB085/2405/28/photo/1-1.png"
+      }
+    ]
+  },
+  "focusfixture.com": {
+    "domain": "focusfixture.com",
+    "icon": "/site-logos/focusstoredisplay.com-icon.png",
+    "brand": "/site-logos/focusstoredisplay.com-icon.png",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/focusstoredisplay.com-icon.png",
+        "source": "https://ueeshop.ly200-cdn.com/u_file/UPBB/UPBB085/2405/28/photo/1-1.png"
+      }
+    ],
+    "fallback": "观筑品牌标识",
+    "fallbackFrom": "focusstoredisplay.com"
+  },
+  "focuscarddisplay.com": {
+    "domain": "focuscarddisplay.com",
+    "icon": "/site-logos/focuscarddisplay.com-brand.webp",
+    "brand": "/site-logos/focuscarddisplay.com-brand.webp",
+    "sources": [
+      {
+        "kind": "brand",
+        "path": "/site-logos/focuscarddisplay.com-brand.webp",
+        "source": "https://media.focuscarddisplay.com/site-assets/brand/focus-display-fixture-logo-6f26d58315.webp"
+      }
+    ]
+  },
+  "focuscstorefixtures.com": {
+    "domain": "focuscstorefixtures.com",
+    "icon": "/site-logos/focuscstorefixtures.com-icon.png",
+    "brand": "/site-logos/focuscstorefixtures.com-icon.png",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/focuscstorefixtures.com-icon.png",
+        "source": "https://media.focuscstorefixtures.com/brand/favicon.png"
+      }
+    ]
+  },
+  "candyfixtures.com": {
+    "domain": "candyfixtures.com",
+    "icon": "/site-logos/candyfixtures.com-icon.png",
+    "brand": "/site-logos/candyfixtures.com-icon.png",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/candyfixtures.com-icon.png",
+        "source": "https://candyfixtures.com/brand/focus-app-icon.png"
+      }
+    ]
+  },
+  "bensonfixtures.com": {
+    "domain": "bensonfixtures.com",
+    "icon": "/site-logos/bensonfixtures.com-icon.ico",
+    "brand": "/site-logos/bensonfixtures.com-icon.ico",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/bensonfixtures.com-icon.ico",
+        "source": "https://bensonfixtures.com/favicon.ico"
+      }
+    ]
+  },
+  "bensondisplay.com": {
+    "domain": "bensondisplay.com",
+    "icon": "/site-logos/bensondisplay.com-icon.png",
+    "brand": "/site-logos/bensondisplay.com-icon.png",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/bensondisplay.com-icon.png",
+        "source": "https://bensondisplay.com/icon.png?8ae224f5b677295c"
+      }
+    ]
+  },
+  "bensoncarddisplay.com": {
+    "domain": "bensoncarddisplay.com",
+    "icon": "/site-logos/bensoncarddisplay.com-icon.ico",
+    "brand": "/site-logos/bensoncarddisplay.com-icon.ico",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/bensoncarddisplay.com-icon.ico",
+        "source": "https://bensoncarddisplay.com/favicon.ico"
+      }
+    ]
+  },
+  "bensontoydisplay.com": {
+    "domain": "bensontoydisplay.com",
+    "icon": "/site-logos/bensontoydisplay.com-icon.png",
+    "brand": "/site-logos/bensontoydisplay.com-icon.png",
+    "sources": [
+      {
+        "kind": "icon",
+        "path": "/site-logos/bensontoydisplay.com-icon.png",
+        "source": "https://images.bensontoydisplay.com/benson-brand-site-icon-0b307b3cf8.png"
+      }
+    ]
+  }
+}
