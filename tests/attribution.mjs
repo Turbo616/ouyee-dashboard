@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';import fs from 'node:fs';import ts from 'typescript';
 import {isSocialAd} from '../cloud/ad-scope.js';import {normalizeSheetTables,sourceChannel} from '../cloud/sheet-leads.js';
 const code=ts.transpileModule(fs.readFileSync(new URL('../src/data.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText.replace('../cloud/ad-scope.js',new URL('../cloud/ad-scope.js',import.meta.url).href);
-const {adRows,sumAds,inquiryAcquisition,inquiryAcquisitionSummary}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const {adRows,sumAds,inquiryAcquisition,inquiryAcquisitionSummary,getSiteGsc}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
 const sites=[{domain:'oydisplay.com',group:'欧野'},{domain:'ouyedisplay.com',group:'欧野'}];
 const row=(id,channel='DEMAND_GEN',campaign='Campaign')=>({campaignId:id,channel,campaign,domain:'oydisplay.com',date:'2026-10-06',costMicros:1000000,clicks:1,impressions:10,conversions:1});
 const d={sites,accounts:[{id:'a',currency:'CNY',name:'A',daily:[row('23863935806'),row('search','SEARCH')]},{id:'b',currency:'CNY',name:'B',daily:[row('23871949843'),row('other-demand')]}]},period={start:'2026-10-01',end:'2026-10-06'};
@@ -15,3 +15,5 @@ console.log('PASS: both social campaigns, spend/site scopes, WhatsApp URL/blank-
 const summary=inquiryAcquisitionSummary([{channel:'Google Ads'},{channel:'自然搜索'},{channel:'AI 推荐'},{channel:'未知'}]);assert.deepEqual(summary,{total:4,paid:1,natural:2,unmarked:1,paidShare:25,naturalShare:50});assert.equal(inquiryAcquisitionSummary([]).paidShare,null);console.log('PASS: unmarked historical sources stay separate, shares use all inquiries, empty denominator guarded');
 
 assert.equal(sourceChannel('GPT ads'),'GPT Ads');assert.equal(sourceChannel('GPT'),'AI 推荐');assert.equal(inquiryAcquisition({channel:'GPT Ads'}),'广告询盘');assert.equal(inquiryAcquisitionSummary([{channel:'GPT Ads'},{channel:'Google Ads'},{channel:'AI 推荐'}]).paid,2);console.log('PASS: GPT Ads is paid, GPT recommendation is organic');
+
+assert.equal(getSiteGsc({gsc:{availableEnd:'2026-10-06',daily:[]}}, {start:'2026-10-09',end:'2026-10-09'}),null);console.log('PASS: unavailable GSC date returns no value, not zero');
