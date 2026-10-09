@@ -1,4 +1,4 @@
-import {Inbox,Megaphone,Search,Info,MessageCircle} from 'lucide-react';
+import {Inbox,Megaphone,Search,Info} from 'lucide-react';
 import type {Dashboard,Site,Period} from '../types';
 import {adRows,sumAds,filterLeads,inquiryAcquisition,inquiryAcquisitionSummary,inquiryOpportunityCost,number,money,gptSpendCovered,percentOf,platformInquiryCounts} from '../data';
 import {Metric} from './ui';
@@ -12,17 +12,20 @@ export function CoreMetrics({data,sites,period}:{data:Dashboard;sites:Site[];per
  const count=(n:number)=>connected?number(n):'—',pct=(n:number|null)=>n===null?'—':number(n,1)+'%',inquiryShare=(n:number)=>connected?pct(percentOf(n,counts.total)):'—',spendShare=(n:number)=>currencies.length>1?'—':pct(percentOf(n,comparisonSpend)),cost=(value:number,n:number,ready:boolean,currency:string)=>money(inquiryOpportunityCost(value,n,connected&&ready),currency);
  const googleCostFoot=googleAvailable?'谷歌搜索广告花费 ÷ 谷歌广告询盘':'广告报表未覆盖完整周期，暂不计算',gptCostFoot=gptComplete&&data.gptAds?'ChatGPT 广告花费 ÷ ChatGPT 广告询盘':'ChatGPT 花费未覆盖完整周期，暂不计算',totalCostFoot=currencies.length>1?'币种不同，暂不合并计算':!gptComplete?'ChatGPT 花费未覆盖完整周期，暂不计算':!googleAvailable?'广告报表未覆盖完整周期，暂不计算':null;
  return <section className="core-metrics" aria-label="核心获客数据"><div className="core-heading"><h2>核心获客数据</h2><span className="muted">{period.start} — {period.end} · 所有询盘包含 WhatsApp 登记</span></div><div className="metrics-grid core-grid">
- <Metric label="谷歌搜索广告花费" value={googleCurrencies.length>1?'多币种，未合并':money(googleAvailable?googleSpend:null,googleCurrency)} foot={googleAvailable?`已读取花费占比 ${spendShare(googleSpend)}`:'所选周期广告报表未完整读取'} icon={<Megaphone size={19}/>}/>
- <Metric label="谷歌广告询盘" value={count(platform.google)} foot={`占总询盘 ${inquiryShare(platform.google)} · 含 WhatsApp ${number(googleWa)} 条`} icon={<Megaphone size={19}/>}/>
+ <Metric label="官网总花费" value={currencies.length>1?'多币种，未合并':money(googleAvailable||gptOverlap?totalSpend:null,currencies[0]||googleCurrency)} foot="谷歌广告 + GPT 广告已读取花费" icon={<Megaphone size={19}/>}/>
+ <Metric label="官网总询盘" value={count(counts.total)} foot={`包含 WhatsApp ${number(whatsapp.length)} 条${counts.unmarked?` · 未标来源 ${number(counts.unmarked)} 条`:''}`} icon={<Inbox size={19}/>}/>
+ <Metric label="官网广告询盘" value={count(counts.paid)} foot={`占总询盘 ${inquiryShare(counts.paid)} · 包含 WhatsApp ${number(waPaid)} 条`} icon={<Megaphone size={19}/>}/>
+ <Metric label="官网自然询盘" value={count(counts.natural)} foot={`占总询盘 ${inquiryShare(counts.natural)} · 包含 WhatsApp ${number(waNatural)} 条`} icon={<Search size={19}/>}/>
+ <Metric label="总询盘成本" value={cost(totalSpend,counts.total,allComplete,currencies[0]||googleCurrency)} foot={totalCostFoot||'官网总花费 ÷ 官网总询盘'} icon={<Inbox size={19}/>}/>
+ <Metric label="谷歌广告花费" value={googleCurrencies.length>1?'多币种，未合并':money(googleAvailable?googleSpend:null,googleCurrency)} foot="Google Ads 搜索广告" icon={<Megaphone size={19}/>}/>
+ <Metric label="谷歌广告询盘" value={count(platform.google)} foot={`SEM / Google Ads · 包含 WhatsApp ${number(googleWa)} 条`} icon={<Megaphone size={19}/>}/>
  <Metric label="谷歌广告询盘成本" value={cost(googleSpend,platform.google,googleAvailable,googleCurrency)} foot={googleCostFoot} icon={<Megaphone size={19}/>}/>
- <Metric label="ChatGPT 广告花费" value={money(gptOverlap?gptSpend:null,gptCurrency)} foot={gptOverlap?`已读取花费占比 ${spendShare(gptSpend)} · 固定汇率 ${data.gptAds?.exchangeRate||7}`:data.gptAds?gptMatched?'所选日期不在报表覆盖范围':'所选网站暂无对应报表':'广告花费尚未接入'} icon={<Megaphone size={19}/>}/>
- <Metric label="ChatGPT 广告询盘" value={count(platform.gpt)} foot={`占总询盘 ${inquiryShare(platform.gpt)} · 含 WhatsApp ${number(gptWa)} 条`} icon={<Megaphone size={19}/>}/>
- <Metric label="ChatGPT 广告询盘成本" value={cost(gptSpend,platform.gpt,gptOverlap&&gptComplete,gptCurrency)} foot={gptCostFoot} icon={<Megaphone size={19}/>}/>
- <Metric label="广告询盘总数" value={count(counts.paid)} foot={`占总询盘 ${inquiryShare(counts.paid)} · 含 WhatsApp ${number(waPaid)} 条`} icon={<Megaphone size={19}/>}/>
- <Metric label="自然询盘总数" value={count(counts.natural)} foot={`占总询盘 ${inquiryShare(counts.natural)} · 含 WhatsApp ${number(waNatural)} 条`} icon={<Search size={19}/>}/>
- <Metric label="WhatsApp 询盘总数" value={count(whatsapp.length)} foot={`广告 ${number(waPaid)} · 自然 ${number(waNatural)} · 未标来源 ${number(whatsapp.length-waPaid-waNatural)}`} icon={<MessageCircle size={19}/>}/>
- <Metric label="广告询盘成本" value={cost(totalSpend,counts.paid,allComplete,currencies[0]||googleCurrency)} foot={totalCostFoot||'全部广告花费 ÷ 广告询盘总数'} icon={<Megaphone size={19}/>}/>
- <Metric label="总询盘成本" value={cost(totalSpend,counts.total,allComplete,currencies[0]||googleCurrency)} foot={totalCostFoot||'全部广告花费 ÷ 总询盘数'} icon={<Inbox size={19}/>}/>
- <Metric label="总询盘" value={count(counts.total)} foot={counts.unmarked?`${number(counts.unmarked)} 条来源未标注，已单独保留`:'网站、邮件与 WhatsApp 登记合计'} icon={<Inbox size={19}/>}/>
- </div>{data.gptAds&&!gptComplete&&<div className="notice"><Info size={17}/><span>ChatGPT 广告报表仅覆盖 {data.gptAds.start} 至 {data.gptAds.end}，花费及花费占比显示已读取部分。ChatGPT 询盘成本、全部广告询盘成本和总询盘成本暂不计算；谷歌广告询盘成本独立计算。</span></div>}{!data.gptAds&&platform.gpt>0&&<div className="notice"><Info size={17}/><span>ChatGPT 广告花费尚未接入，对应成本暂不计算。</span></div>}{(period.start<'2026-10-01'||counts.unmarked>0)&&<div className="notice"><Info size={17}/><span>{period.start<'2026-10-01'?'2026 年 10 月前来源登记不完整，历史渠道占比与成本仅供参考。':''}{counts.unmarked>0?` ${number(counts.unmarked)} 条来源未标注，计入总询盘，不归入广告或自然。`:''}WhatsApp 是接收方式，已包含在各来源询盘数中，请勿重复相加。</span></div>}</section>
+ <Metric label="谷歌广告花费占比" value={googleAvailable?spendShare(googleSpend):'—'} foot="谷歌花费 ÷ 两平台已读取花费" icon={<Megaphone size={19}/>}/>
+ <Metric label="谷歌广告询盘占比" value={inquiryShare(platform.google)} foot="谷歌广告询盘 ÷ 官网总询盘" icon={<Inbox size={19}/>}/>
+ <Metric label="ChatGPT 广告花费" value={money(gptOverlap?gptSpend:null,gptCurrency)} foot={gptOverlap?`固定汇率 ${data.gptAds?.exchangeRate||7} · 已读取花费`:data.gptAds?gptMatched?'所选日期不在报表覆盖范围':'所选网站暂无对应报表':'广告花费尚未接入'} icon={<Megaphone size={19}/>}/>
+ <Metric label="GPT 广告询盘" value={count(platform.gpt)} foot={`GPT Ads · 包含 WhatsApp ${number(gptWa)} 条`} icon={<Megaphone size={19}/>}/>
+ <Metric label="GPT 广告询盘成本" value={cost(gptSpend,platform.gpt,gptOverlap&&gptComplete,gptCurrency)} foot={gptCostFoot} icon={<Megaphone size={19}/>}/>
+ <Metric label="GPT 广告花费占比" value={gptOverlap?spendShare(gptSpend):'—'} foot="GPT 花费 ÷ 两平台已读取花费" icon={<Megaphone size={19}/>}/>
+ <Metric label="GPT 广告询盘占比" value={inquiryShare(platform.gpt)} foot="GPT 广告询盘 ÷ 官网总询盘" icon={<Inbox size={19}/>}/>
+ </div>{data.gptAds&&!gptComplete&&<div className="notice"><Info size={17}/><span>ChatGPT 广告报表仅覆盖 {data.gptAds.start} 至 {data.gptAds.end}，花费及花费占比显示已读取部分。GPT 广告询盘成本和总询盘成本暂不计算；谷歌广告询盘成本独立计算。</span></div>}{!data.gptAds&&platform.gpt>0&&<div className="notice"><Info size={17}/><span>ChatGPT 广告花费尚未接入，对应成本暂不计算。</span></div>}{(period.start<'2026-10-01'||counts.unmarked>0)&&<div className="notice"><Info size={17}/><span>{period.start<'2026-10-01'?'2026 年 10 月前来源登记不完整，历史渠道占比与成本仅供参考。':''}{counts.unmarked>0?` ${number(counts.unmarked)} 条来源未标注，计入总询盘，不归入广告或自然。`:''}WhatsApp 是接收方式，已包含在各来源询盘数中，请勿重复相加。</span></div>}</section>
 }
