@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';import fs from 'node:fs';import ts from 'typescript';
 import {isSocialAd} from '../cloud/ad-scope.js';import {normalizeSheetTables,sourceChannel} from '../cloud/sheet-leads.js';
 const code=ts.transpileModule(fs.readFileSync(new URL('../src/data.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText.replace('../cloud/ad-scope.js',new URL('../cloud/ad-scope.js',import.meta.url).href);
-const {adRows,sumAds,inquiryAcquisition,inquiryAcquisitionSummary,getSiteGsc}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const {adRows,sumAds,inquiryAcquisition,inquiryAcquisitionSummary,getSiteGsc,percentOf,platformInquiryCounts}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
 const sites=[{domain:'oydisplay.com',group:'欧野'},{domain:'ouyedisplay.com',group:'欧野'}];
 const row=(id,channel='DEMAND_GEN',campaign='Campaign')=>({campaignId:id,channel,campaign,domain:'oydisplay.com',date:'2026-10-06',costMicros:1000000,clicks:1,impressions:10,conversions:1});
 const d={sites,accounts:[{id:'a',currency:'CNY',name:'A',daily:[row('23863935806'),row('search','SEARCH')]},{id:'b',currency:'CNY',name:'B',daily:[row('23871949843'),row('other-demand')]}]},period={start:'2026-10-01',end:'2026-10-06'};
@@ -19,3 +19,5 @@ assert.equal(sourceChannel('GPT ads'),'GPT Ads');assert.equal(sourceChannel('GPT
 assert.equal(getSiteGsc({gsc:{availableEnd:'2026-10-06',daily:[]}}, {start:'2026-10-09',end:'2026-10-09'}),null);console.log('PASS: unavailable GSC date returns no value, not zero');
 
 const searchData={...d,gptAds:{accountName:'GPT',currency:'CNY',daily:[row('gpt','GPT_ADS')]},accounts:[...d.accounts,{id:'c',currency:'CNY',name:'C',daily:[row('video','VIDEO'),row('display','DISPLAY'),row('pmax','PERFORMANCE_MAX'),row('youtube-search','SEARCH','YouTube promotion'),row('23863935806','SEARCH')]}]};assert.equal(sumAds(adRows(searchData,sites,period,'search')).cost,1);assert.equal(adRows(searchData,[sites[1]],period,'search').length,0);assert.equal(adRows(searchData,sites,{start:'2026-10-07',end:'2026-10-09'},'search').length,0);console.log('PASS: search spend excludes video, social campaign IDs, Demand Gen, display, PMax and GPT; site/date filters preserved');
+
+assert.deepEqual(platformInquiryCounts([{channel:'Google Ads'},{channel:'GPT Ads'},{channel:'广告（平台未注明）'},{channel:'自然搜索'},{channel:'未知'}]),{google:1,gpt:1,otherPaid:1});assert.equal(percentOf(1,5),20);assert.equal(percentOf(0,0),null);assert.equal(percentOf(0,5),0);console.log('PASS: platform inquiry split, unknown paid platform and percentage denominators');

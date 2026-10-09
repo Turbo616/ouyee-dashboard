@@ -23,3 +23,6 @@ export function inquiryAcquisition(row:Lead){if(!row.channel||row.channel==='未
 export function inquiryAcquisitionSummary(rows:Lead[]){const paid=rows.filter(r=>inquiryAcquisition(r)==='广告询盘').length,natural=rows.filter(r=>inquiryAcquisition(r)==='自然 / AI 推荐询盘').length;return {total:rows.length,paid,natural,unmarked:rows.length-paid-natural,paidShare:rows.length?paid/rows.length*100:null,naturalShare:rows.length?natural/rows.length*100:null}}
 
 export function gptSpendCovered(d:Dashboard,sites:Site[],p:Period){const rows=filterLeads(d,sites,p).filter(r=>r.channel==='GPT Ads');if(!d.gptAds)return !rows.length;const group=d.sites.find(s=>s.domain===d.gptAds!.domain)?.group;if(!sites.some(s=>s.group===group)&&!rows.length)return true;return p.start>=d.gptAds.start&&p.end<=d.gptAds.end&&rows.every(r=>(d.sites.find(s=>s.domain===r.domain)?.group||r.group)===group)}
+
+export function percentOf(value:number,total:number){return Number.isFinite(value)&&Number.isFinite(total)&&value>=0&&total>0?value/total*100:null}
+export function platformInquiryCounts(rows:Lead[]){const google=rows.filter(r=>r.channel==='Google Ads').length,gpt=rows.filter(r=>r.channel==='GPT Ads').length;return {google,gpt,otherPaid:rows.filter(r=>inquiryAcquisition(r)==='广告询盘').length-google-gpt}}
