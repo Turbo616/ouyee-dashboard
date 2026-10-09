@@ -1,3 +1,4 @@
+import {isSocialAd} from '../cloud/ad-scope.js';
 import type {Dashboard,Site,Period,AdDay,Lead} from './types';
 export const number=(value:number|null|undefined,digits=0)=>value==null?'—':new Intl.NumberFormat('zh-CN',{maximumFractionDigits:digits}).format(value);
 export const money=(value:number|null|undefined,currency='CNY')=>value==null?'—':new Intl.NumberFormat('zh-CN',{style:'currency',currency,maximumFractionDigits:2}).format(value);
@@ -5,7 +6,7 @@ export const inside=(date:string,p:Period)=>date>=p.start&&date<=p.end;
 export function offsetDate(date:string,days:number){const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
 export function days(p:Period){const rows:string[]=[];for(let d=p.start;d<=p.end;d=offsetDate(d,1))rows.push(d);return rows}
 export function getSiteGsc(s:Site,p:Period){if(!s.gsc)return null;const r=s.gsc.daily.filter(x=>inside(x.date,p));const clicks=r.reduce((n,x)=>n+x.clicks,0),impressions=r.reduce((n,x)=>n+x.impressions,0);return{clicks,impressions,ctr:impressions?clicks/impressions:0,position:impressions?r.reduce((n,x)=>n+x.position*x.impressions,0)/impressions:null}}
-export function adRows(d:Dashboard,sites:Site[],p:Period){const domains=new Set(sites.map(s=>s.domain));const all=sites.length===d.sites.length;return d.accounts.flatMap(a=>a.daily.filter(r=>inside(r.date,p)&&(all||!!r.domain&&domains.has(r.domain))).map(r=>({...r,currency:a.currency,accountId:a.id,accountName:a.name})))}
+export function adRows(d:Dashboard,sites:Site[],p:Period,scope:'website'|'social'|'all'='website'){const domains=new Set(sites.map(s=>s.domain));const all=sites.length===d.sites.length;return d.accounts.flatMap(a=>a.daily.filter(r=>inside(r.date,p)&&(scope==='all'||isSocialAd(r)===(scope==='social'))&&(all||!!r.domain&&domains.has(r.domain))).map(r=>({...r,currency:a.currency,accountId:a.id,accountName:a.name})))}
 export function sumAds(rows:AdDay[]){return{cost:rows.reduce((n,r)=>n+r.costMicros,0)/1e6,clicks:rows.reduce((n,r)=>n+r.clicks,0),impressions:rows.reduce((n,r)=>n+r.impressions,0),conversions:rows.reduce((n,r)=>n+r.conversions,0)}}
 export function leadSiteCovered(d:Dashboard,s:Site){if(!d.leads.connected)return false;if(d.leads.source?.type!=='google_sheet')return true;return !!d.leads.source.tabs?.some(t=>t.domain===s.domain)||d.leads.rows.some(r=>r.domain===s.domain)}
 export function selectLeads(d:Dashboard,sites:Site[]){const domains=new Set(sites.map(s=>s.domain)),all=sites.length===d.sites.length,groups=new Set(sites.map(s=>s.group)),group=groups.size===1?[...groups][0]:null,wholeGroup=!!group&&sites.length===d.sites.filter(s=>s.group===group).length;return d.leads.rows.filter(r=>all||domains.has(r.domain)||!r.domain&&wholeGroup&&r.group===group)}
@@ -16,3 +17,5 @@ export function groupCampaigns(rows:ReturnType<typeof adRows>){const map=new Map
 export function leadCounts(rows:Lead[]){return{registered:rows.length,valid:rows.filter(r=>r.status==='有效').length,pending:rows.filter(r=>r.status==='待确认').length,spam:rows.filter(r=>r.status==='垃圾').length}}
 
 export function inquiryOpportunityCost(spend:number,total:number,available:boolean){return available&&Number.isFinite(spend)&&spend>=0&&total>0?spend/total:null}
+
+export function inquiryAcquisition(row:Lead){return row.channel==='Google Ads'||row.channel==='广告（平台未注明）'?'广告询盘':'自然 / AI 推荐询盘'}
