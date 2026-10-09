@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';import fs from 'node:fs';import ts from 'typescript';
 import {isSocialAd} from '../cloud/ad-scope.js';import {normalizeSheetTables,sourceChannel} from '../cloud/sheet-leads.js';
 const code=ts.transpileModule(fs.readFileSync(new URL('../src/data.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText.replace('../cloud/ad-scope.js',new URL('../cloud/ad-scope.js',import.meta.url).href);
-const {adRows,sumAds,inquiryAcquisition}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const {adRows,sumAds,inquiryAcquisition,inquiryAcquisitionSummary}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
 const sites=[{domain:'oydisplay.com',group:'欧野'},{domain:'ouyedisplay.com',group:'欧野'}];
 const row=(id,channel='DEMAND_GEN',campaign='Campaign')=>({campaignId:id,channel,campaign,domain:'oydisplay.com',date:'2026-10-06',costMicros:1000000,clicks:1,impressions:10,conversions:1});
 const d={sites,accounts:[{id:'a',currency:'CNY',name:'A',daily:[row('23863935806'),row('search','SEARCH')]},{id:'b',currency:'CNY',name:'B',daily:[row('23871949843'),row('other-demand')]}]},period={start:'2026-10-01',end:'2026-10-06'};
@@ -9,5 +9,7 @@ assert.equal(sumAds(adRows(d,sites,period)).cost,2);assert.equal(sumAds(adRows(d
 const headers=['','日期','姓名','国家','WhatsApp','类目','客户留言','跟进','客户具体项目信息和跟进情况'];
 const urls=['https://oydisplay.com/','项目 https://www.ouyedisplay.com/contact/','https://oydisplay.com/','https://oydisplay.com/ https://ouyedisplay.com/','https://oydisplay.com.attacker.test/'];
 const t={sheetId:562092960,title:'欧野-whatsapp',values:[headers,...urls.map((u,i)=>[['SEO','Google Ads','GPT','SEO','SEO'][i],'2026年10月6日','','US',String(i),'','','',u])]};
-const leads=normalizeSheetTables([t],sites,new Date('2026-10-09T00:00:00Z')).rows;const lead=i=>leads.find(r=>r.phone===String(i));assert.equal(lead(0).domain,'oydisplay.com');assert.equal(lead(0).channel,'自然搜索');assert.equal(lead(1).domain,'ouyedisplay.com');assert.equal(inquiryAcquisition(lead(1)),'广告询盘');assert.equal(lead(2).channel,'AI 推荐');assert.equal(lead(3).domain,'');assert.equal(lead(4).domain,'');assert.equal(sourceChannel('AI Overview'),'自然搜索');assert.equal(sourceChannel('自然'),'自然搜索');assert.equal(inquiryAcquisition({channel:'未知'}),'自然 / AI 推荐询盘');
+const leads=normalizeSheetTables([t],sites,new Date('2026-10-09T00:00:00Z')).rows;const lead=i=>leads.find(r=>r.phone===String(i));assert.equal(lead(0).domain,'oydisplay.com');assert.equal(lead(0).channel,'自然搜索');assert.equal(lead(1).domain,'ouyedisplay.com');assert.equal(inquiryAcquisition(lead(1)),'广告询盘');assert.equal(lead(2).channel,'AI 推荐');assert.equal(lead(3).domain,'');assert.equal(lead(4).domain,'');assert.equal(sourceChannel('AI Overview'),'自然搜索');assert.equal(sourceChannel('自然'),'自然搜索');assert.equal(inquiryAcquisition({channel:'未知'}),'来源未标注');
 console.log('PASS: both social campaigns, spend/site scopes, WhatsApp URL/blank-header source, ambiguous domains and inquiry split');
+
+const summary=inquiryAcquisitionSummary([{channel:'Google Ads'},{channel:'自然搜索'},{channel:'AI 推荐'},{channel:'未知'}]);assert.deepEqual(summary,{total:4,paid:1,natural:2,unmarked:1,paidShare:25,naturalShare:50});assert.equal(inquiryAcquisitionSummary([]).paidShare,null);console.log('PASS: unmarked historical sources stay separate, shares use all inquiries, empty denominator guarded');
