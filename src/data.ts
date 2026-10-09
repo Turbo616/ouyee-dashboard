@@ -18,6 +18,6 @@ export function leadCounts(rows:Lead[]){return{registered:rows.length,valid:rows
 
 export function inquiryOpportunityCost(spend:number,total:number,available:boolean){return available&&Number.isFinite(spend)&&spend>=0&&total>0?spend/total:null}
 
-export function inquiryAcquisition(row:Lead){if(!row.channel||row.channel==='未知')return '来源未标注';return row.channel==='Google Ads'||row.channel==='广告（平台未注明）'?'广告询盘':'自然 / AI 推荐询盘'}
+export function inquiryAcquisition(row:Lead){if(!row.channel||row.channel==='未知')return '来源未标注';return row.channel==='Google Ads'||row.channel==='GPT Ads'||row.channel==='广告（平台未注明）'?'广告询盘':'自然 / AI 推荐询盘'}
 
 export function inquiryAcquisitionSummary(rows:Lead[]){const paid=rows.filter(r=>inquiryAcquisition(r)==='广告询盘').length,natural=rows.filter(r=>inquiryAcquisition(r)==='自然 / AI 推荐询盘').length;return {total:rows.length,paid,natural,unmarked:rows.length-paid-natural,paidShare:rows.length?paid/rows.length*100:null,naturalShare:rows.length?natural/rows.length*100:null}}

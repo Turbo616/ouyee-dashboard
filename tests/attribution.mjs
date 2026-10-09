@@ -13,3 +13,5 @@ const leads=normalizeSheetTables([t],sites,new Date('2026-10-09T00:00:00Z')).row
 console.log('PASS: both social campaigns, spend/site scopes, WhatsApp URL/blank-header source, ambiguous domains and inquiry split');
 
 const summary=inquiryAcquisitionSummary([{channel:'Google Ads'},{channel:'自然搜索'},{channel:'AI 推荐'},{channel:'未知'}]);assert.deepEqual(summary,{total:4,paid:1,natural:2,unmarked:1,paidShare:25,naturalShare:50});assert.equal(inquiryAcquisitionSummary([]).paidShare,null);console.log('PASS: unmarked historical sources stay separate, shares use all inquiries, empty denominator guarded');
+
+assert.equal(sourceChannel('GPT ads'),'GPT Ads');assert.equal(sourceChannel('GPT'),'AI 推荐');assert.equal(inquiryAcquisition({channel:'GPT Ads'}),'广告询盘');assert.equal(inquiryAcquisitionSummary([{channel:'GPT Ads'},{channel:'Google Ads'},{channel:'AI 推荐'}]).paid,2);console.log('PASS: GPT Ads is paid, GPT recommendation is organic');
