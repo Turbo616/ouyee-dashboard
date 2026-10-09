@@ -11,4 +11,4 @@ export interface LeadStore {connected:boolean;updatedAt?:string;rows:Lead[];qual
 export interface Dashboard {gptAds?:GptAdsStore|null;refreshSchedule?:{enabled:boolean;time:string;timeZone:string;lastRun?:{status:string;trigger?:string;startedAt?:string;finishedAt?:string;message?:string;coverage?:{gsc:number;ga4:number;ads:number;inquiries:number}}|null};checkedAt:string;period:{start:string;end:string;gscEnd?:string;previousStart:string;days:number;timeZone:string};sheet:{title:string;id:string};sites:Site[];accounts:Account[];errors:{source:string;message:string;accountId?:string}[];ga4AccessibleCount:number;leads:LeadStore}
 export interface Period {start:string;end:string}
 
-export interface GptAdsStore {sourceFile:string;importedAt:string;mode:string;currency:string;domain:string;accountName:string;start:string;end:string;daily:AdDay[];total:number}
+export interface GptAdsStore {sourceCurrency?:string;exchangeRate?:number;sourceTotal?:number;sourceFile:string;importedAt:string;mode:string;currency:string;domain:string;accountName:string;start:string;end:string;daily:AdDay[];total:number}
